@@ -46,6 +46,39 @@
             align-items: center;
         }
 
+        .week-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .week-nav-btn {
+            height: 36px;
+            width: 24px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+            border-radius: 3px;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .week-nav-btn:hover {
+            background: #f0f0f0;
+            border-color: #999;
+            color: #333;
+        }
+
+        .week-nav-btn:active {
+            background: #e0e0e0;
+        }
+
         select {
             padding: 8px 12px;
             border: 2px solid #ddd;
@@ -128,19 +161,38 @@
         @keyframes greenFlash {
             0% { 
                 background: #2e7d32;
-                color: white;
                 transform: scale(1.05);
             }
             50% { 
                 background: #388e3c;
-                color: white;
                 transform: scale(1.02);
             }
             100% { 
                 background: #e8f5e8;
-                color: inherit;
                 transform: scale(1);
             }
+        }
+
+        @keyframes textFlash {
+            0% { 
+                color: white;
+            }
+            50% { 
+                color: white;
+            }
+            100% { 
+                color: inherit;
+            }
+        }
+
+        .employee-summary.hours-complete.flash {
+            animation: greenFlash 0.8s ease-out;
+        }
+
+        .employee-summary.hours-complete.flash .employee-name,
+        .employee-summary.hours-complete.flash .hours-total,
+        .employee-summary.hours-complete.flash .hours-remaining {
+            animation: textFlash 0.8s ease-out;
         }
 
         .employee-name {
@@ -426,25 +478,31 @@
 </head>
 <body>
     <div class="header">
-        <h1>📅 Gestion Planning LATILLE</h1>
+        <h1>📋 Gestion Planning LATILLE</h1>
         <div class="controls">
             <div class="week-selector">
-                <label>Semaine</label>
-                <select id="weekSelect"></select>
-                <label>Année</label>
-                <select id="yearSelect"></select>
+                <div class="week-group">
+                    <label>Semaine</label>
+                    <select id="weekSelect"></select>
+                    <button class="week-nav-btn" onclick="changeWeek(-1)" title="Semaine précédente">◀</button>
+                    <button class="week-nav-btn" onclick="changeWeek(1)" title="Semaine suivante">▶</button>
+                </div>
+                <div class="week-group">
+                    <label>Année</label>
+                    <select id="yearSelect"></select>
+                </div>
             </div>
-            <button class="btn btn-employees" onclick="openEmployeeModal()">👥 Gérer Employés</button>
-            <button class="btn btn-save" onclick="saveSchedule()">💾 Sauvegarder</button>
-            <button class="btn btn-save" onclick="downloadSchedules()">⬇️ Télécharger</button>
-            <button class="btn btn-employees" onclick="loadSchedulesFromFile()">⬆️ Charger</button>
-            <button class="btn btn-email" onclick="sendByEmail()">📧 Envoyer par Email</button>
+            <button class="btn btn-employees" onclick="openEmployeeModal()">Gérer Employés</button>
+            <button class="btn btn-save" onclick="saveSchedule()">Sauvegarder</button>
+            <button class="btn btn-save" onclick="downloadSchedules()">Télécharger</button>
+            <button class="btn btn-employees" onclick="loadSchedulesFromFile()">Charger</button>
+            <button class="btn btn-email" onclick="sendByEmail()">Envoyer par Email</button>
         </div>
     </div>
 
     <div class="main-content">
         <div class="summary">
-            <h3>⏱️ Résumé Hebdomadaire</h3>
+            <h3>Résumé Hebdomadaire</h3>
             <div class="summary-grid" id="summaryGrid"></div>
         </div>
 
@@ -580,6 +638,35 @@
         const sundayGraySlots = ['13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:15', '19:30'];
         const defaultGreenSlots = ['08:30', '08:45', '12:30', '12:45'];
         const weekdayGreenSlots = ['19:00', '19:15']; // Lundi à Samedi seulement
+
+        function changeWeek(direction) {
+            const newWeek = currentWeek + direction;
+            
+            if (newWeek >= 1 && newWeek <= 53) {
+                // Rester dans la même année
+                currentWeek = newWeek;
+                document.getElementById('weekSelect').value = currentWeek;
+                updateScheduleDisplay();
+            } else if (newWeek === 0) {
+                // Passer à la semaine 53 de l'année précédente
+                if (currentYear > 2024) {
+                    currentYear--;
+                    currentWeek = 53;
+                    document.getElementById('yearSelect').value = currentYear;
+                    document.getElementById('weekSelect').value = currentWeek;
+                    updateScheduleDisplay();
+                }
+            } else if (newWeek === 54) {
+                // Passer à la semaine 1 de l'année suivante
+                if (currentYear < 2030) {
+                    currentYear++;
+                    currentWeek = 1;
+                    document.getElementById('yearSelect').value = currentYear;
+                    document.getElementById('weekSelect').value = currentWeek;
+                    updateScheduleDisplay();
+                }
+            }
+        }
 
         function initializeApp() {
             populateSelectors();
