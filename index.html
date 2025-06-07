@@ -244,6 +244,84 @@
             padding: 10px 8px;
             text-align: center;
             border-left: 1px solid #485b6b;
+            position: relative;
+        }
+
+        .day-toggle-container {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            display: flex;
+            gap: 2px;
+        }
+
+        .day-toggle {
+            width: 16px;
+            height: 16px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .day-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+
+        .day-toggle.open {
+            background: #4caf50;
+            color: white;
+        }
+
+        .day-toggle.closed {
+            background: #f44336;
+            color: white;
+        }
+
+        .day-toggle.am-closed {
+            background: #ff9800;
+            color: white;
+        }
+
+        .day-toggle.pm-closed {
+            background: #ff9800;
+            color: white;
+        }
+
+        .schedule-cell.closed {
+            background: repeating-linear-gradient(
+                45deg,
+                #f0f0f0,
+                #f0f0f0 10px,
+                #e0e0e0 10px,
+                #e0e0e0 20px
+            );
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .schedule-cell.closed::after {
+            content: "FERMÉ";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            color: #999;
+            font-size: 10px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .time-row.closed .schedule-cell {
+            position: relative;
         }
 
         .day-title {
@@ -510,30 +588,51 @@
             <div class="days-header">
                 <div class="time-header">Horaires</div>
                 <div class="day-header">
+                    <div class="day-toggle-container">
+                        <div class="day-toggle open" onclick="toggleDayClosure(0)" title="Ouvrir/Fermer lundi" data-day="0">✓</div>
+                    </div>
                     <div class="day-title">Lundi</div>
                     <div class="day-date" id="monday-date"></div>
                 </div>
                 <div class="day-header">
+                    <div class="day-toggle-container">
+                        <div class="day-toggle open" onclick="toggleDayClosure(1)" title="Ouvrir/Fermer mardi" data-day="1">✓</div>
+                    </div>
                     <div class="day-title">Mardi</div>
                     <div class="day-date" id="tuesday-date"></div>
                 </div>
                 <div class="day-header">
+                    <div class="day-toggle-container">
+                        <div class="day-toggle open" onclick="toggleDayClosure(2)" title="Ouvrir/Fermer mercredi" data-day="2">✓</div>
+                    </div>
                     <div class="day-title">Mercredi</div>
                     <div class="day-date" id="wednesday-date"></div>
                 </div>
                 <div class="day-header">
+                    <div class="day-toggle-container">
+                        <div class="day-toggle open" onclick="toggleDayClosure(3)" title="Ouvrir/Fermer jeudi" data-day="3">✓</div>
+                    </div>
                     <div class="day-title">Jeudi</div>
                     <div class="day-date" id="thursday-date"></div>
                 </div>
                 <div class="day-header">
+                    <div class="day-toggle-container">
+                        <div class="day-toggle open" onclick="toggleDayClosure(4)" title="Ouvrir/Fermer vendredi" data-day="4">✓</div>
+                    </div>
                     <div class="day-title">Vendredi</div>
                     <div class="day-date" id="friday-date"></div>
                 </div>
                 <div class="day-header">
+                    <div class="day-toggle-container">
+                        <div class="day-toggle open" onclick="toggleDayClosure(5)" title="Ouvrir/Fermer samedi" data-day="5">✓</div>
+                    </div>
                     <div class="day-title">Samedi</div>
                     <div class="day-date" id="saturday-date"></div>
                 </div>
                 <div class="day-header">
+                    <div class="day-toggle-container">
+                        <div class="day-toggle open" onclick="toggleDayClosure(6)" title="Ouvrir/Fermer dimanche" data-day="6">✓</div>
+                    </div>
                     <div class="day-title">Dimanche</div>
                     <div class="day-date" id="sunday-date"></div>
                 </div>
@@ -625,6 +724,7 @@
         let currentYear = 2025;
         let employees = ['Antoine', 'Léa', 'Noémie', 'Christelle', 'Sandrine'];
         let schedules = {};
+        let closures = {}; // Nouveau : gestion des fermetures
 
         // Variables pour le glisser-déposer
         let isDragging = false;
@@ -638,6 +738,144 @@
         const sundayGraySlots = ['13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:15', '19:30'];
         const defaultGreenSlots = ['08:30', '08:45', '12:30', '12:45'];
         const weekdayGreenSlots = ['19:00', '19:15']; // Lundi à Samedi seulement
+
+        function toggleDayClosure(dayIndex) {
+            const closureKey = `${currentYear}-${currentWeek}`;
+            if (!closures[closureKey]) closures[closureKey] = {};
+            
+            // États: 'open' -> 'closed' -> 'am-closed' -> 'pm-closed' -> 'open'
+            const currentState = closures[closureKey][dayIndex] || 'open';
+            let nextState;
+            
+            switch(currentState) {
+                case 'open':
+                    nextState = 'closed';
+                    break;
+                case 'closed':
+                    nextState = 'am-closed';
+                    break;
+                case 'am-closed':
+                    nextState = 'pm-closed';
+                    break;
+                case 'pm-closed':
+                    nextState = 'open';
+                    break;
+                default:
+                    nextState = 'open';
+            }
+            
+            closures[closureKey][dayIndex] = nextState;
+            updateClosureDisplay();
+        }
+
+        function updateClosureDisplay() {
+            const closureKey = `${currentYear}-${currentWeek}`;
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            
+            days.forEach((day, dayIndex) => {
+                const toggle = document.querySelector(`[data-day="${dayIndex}"]`);
+                const state = closures[closureKey] ? closures[closureKey][dayIndex] || 'open' : 'open';
+                
+                // Mettre à jour l'apparence du bouton
+                toggle.className = `day-toggle ${state}`;
+                
+                switch(state) {
+                    case 'open':
+                        toggle.textContent = '✓';
+                        toggle.title = `Ouvrir/Fermer ${getDayName(dayIndex)}`;
+                        break;
+                    case 'closed':
+                        toggle.textContent = '✗';
+                        toggle.title = `${getDayName(dayIndex)} - Fermé toute la journée`;
+                        break;
+                    case 'am-closed':
+                        toggle.textContent = 'AM';
+                        toggle.title = `${getDayName(dayIndex)} - Fermé le matin`;
+                        break;
+                    case 'pm-closed':
+                        toggle.textContent = 'PM';
+                        toggle.title = `${getDayName(dayIndex)} - Fermé l'après-midi`;
+                        break;
+                }
+                
+                // Appliquer les effets visuels sur les lignes
+                updateRowsVisual(dayIndex, state);
+            });
+        }
+
+        function updateRowsVisual(dayIndex, state) {
+            // Supprimer les classes existantes
+            document.querySelectorAll('.time-row').forEach(row => {
+                const cells = row.querySelectorAll('.schedule-cell');
+                if (cells[dayIndex]) {
+                    cells[dayIndex].classList.remove('closed');
+                    // Supprimer tout texte qui pourrait avoir été ajouté
+                    cells[dayIndex].style.position = 'relative';
+                    const existingText = cells[dayIndex].querySelector('.closed-text');
+                    if (existingText) {
+                        existingText.remove();
+                    }
+                }
+                row.classList.remove('closed');
+            });
+            
+            if (state === 'closed') {
+                // Fermeture complète
+                document.querySelectorAll('.time-row').forEach(row => {
+                    const cells = row.querySelectorAll('.schedule-cell');
+                    if (cells[dayIndex]) {
+                        cells[dayIndex].classList.add('closed');
+                    }
+                });
+            } else if (state === 'am-closed') {
+                // Fermeture matin (07:00-13:00)
+                timeSlots.forEach((slot, slotIndex) => {
+                    const hour = parseInt(slot.start.split(':')[0]);
+                    if (hour >= 7 && hour < 13) {
+                        const row = document.querySelectorAll('.time-row')[slotIndex];
+                        if (row) {
+                            const cells = row.querySelectorAll('.schedule-cell');
+                            if (cells[dayIndex]) {
+                                cells[dayIndex].classList.add('closed');
+                            }
+                        }
+                    }
+                });
+            } else if (state === 'pm-closed') {
+                // Fermeture après-midi (13:00-20:00)
+                timeSlots.forEach((slot, slotIndex) => {
+                    const hour = parseInt(slot.start.split(':')[0]);
+                    if (hour >= 13) {
+                        const row = document.querySelectorAll('.time-row')[slotIndex];
+                        if (row) {
+                            const cells = row.querySelectorAll('.schedule-cell');
+                            if (cells[dayIndex]) {
+                                cells[dayIndex].classList.add('closed');
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function getDayName(dayIndex) {
+            const days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+            return days[dayIndex];
+        }
+
+        function isSlotClosed(dayIndex, slotIndex) {
+            const closureKey = `${currentYear}-${currentWeek}`;
+            const state = closures[closureKey] ? closures[closureKey][dayIndex] || 'open' : 'open';
+            
+            if (state === 'closed') return true;
+            if (state === 'open') return false;
+            
+            const hour = parseInt(timeSlots[slotIndex].start.split(':')[0]);
+            if (state === 'am-closed' && hour >= 7 && hour < 13) return true;
+            if (state === 'pm-closed' && hour >= 13) return true;
+            
+            return false;
+        }
 
         function changeWeek(direction) {
             const newWeek = currentWeek + direction;
@@ -756,6 +994,7 @@
             // Generate time slots
             generateTimeSlots();
             updateSummary();
+            updateClosureDisplay();
         }
 
         function generateTimeSlots() {
@@ -939,6 +1178,12 @@
         }
 
         function toggleTimeSlot(element, dayIndex, slotIndex, empIndex) {
+            // Vérifier si le créneau est fermé
+            if (isSlotClosed(dayIndex, slotIndex)) {
+                alert('Impossible d\'assigner du personnel : établissement fermé sur ce créneau.');
+                return;
+            }
+            
             // Check if past week (no modifications allowed)
             const now = new Date();
             const currentWeekNumber = getWeekNumber(now);
@@ -1141,6 +1386,7 @@
             const dataToSave = {
                 employees: employees,
                 schedules: schedules,
+                closures: closures,
                 savedDate: new Date().toISOString()
             };
             
@@ -1167,6 +1413,7 @@
                             if (data.employees && data.schedules) {
                                 employees = data.employees;
                                 schedules = data.schedules;
+                                closures = data.closures || {};
                                 updateScheduleDisplay();
                                 alert('Données chargées avec succès !');
                             } else {
