@@ -104,6 +104,43 @@
             padding: 10px;
             border-radius: 8px;
             background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        .employee-summary.hours-zero {
+            background: #f8f9fa;
+        }
+
+        .employee-summary.hours-partial {
+            background: #ffebee;
+            border: 1px solid #ef5350;
+        }
+
+        .employee-summary.hours-complete {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+        }
+
+        .employee-summary.hours-complete.flash {
+            animation: greenFlash 0.8s ease-out;
+        }
+
+        @keyframes greenFlash {
+            0% { 
+                background: #2e7d32;
+                color: white;
+                transform: scale(1.05);
+            }
+            50% { 
+                background: #388e3c;
+                color: white;
+                transform: scale(1.02);
+            }
+            100% { 
+                background: #e8f5e8;
+                color: inherit;
+                transform: scale(1);
+            }
         }
 
         .employee-name {
@@ -899,6 +936,19 @@
                 const remainingHours = Math.floor(Math.abs(remaining) / 60);
                 const remainingMinutes = Math.abs(remaining) % 60;
                 const remainingDisplay = `${remaining < 0 ? '-' : ''}${remainingHours}h${remainingMinutes.toString().padStart(2, '0')}`;
+                
+                // Déterminer la classe selon les heures
+                if (totalMinutes === 0) {
+                    card.classList.add('hours-zero');
+                } else if (totalMinutes === 35 * 60) {
+                    card.classList.add('hours-complete');
+                    // Ajouter animation flash si on vient d'atteindre 35h
+                    setTimeout(() => {
+                        card.classList.add('flash');
+                    }, 50);
+                } else {
+                    card.classList.add('hours-partial');
+                }
                 
                 card.innerHTML = `
                     <div class="employee-name">${employee}</div>
