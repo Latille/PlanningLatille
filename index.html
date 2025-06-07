@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestionnaire de Planning Latille</title>
+    <title>Gestion Planning LATILLE</title>
     <style>
         * {
             margin: 0;
@@ -19,7 +19,7 @@
 
         .header {
             background: white;
-            padding: 20px;
+            padding: 12px 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex;
             justify-content: space-between;
@@ -28,10 +28,10 @@
 
         .header h1 {
             color: #2c3e50;
-            font-size: 24px;
+            font-size: 20px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .controls {
@@ -81,16 +81,16 @@
 
         .summary {
             background: white;
-            padding: 20px;
+            padding: 12px 20px;
             border-radius: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .summary h3 {
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             color: #2c3e50;
-            font-size: 18px;
+            font-size: 16px;
         }
 
         .summary-grid {
@@ -136,31 +136,35 @@
         .days-header {
             display: grid;
             grid-template-columns: 80px repeat(7, 1fr);
-            background: #2c3e50;
+            background: #1a252f;
             color: white;
         }
 
         .time-header {
-            background: #34495e;
-            padding: 15px 10px;
+            background: #243342;
+            padding: 10px 8px;
             text-align: center;
             font-weight: bold;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .day-header {
-            padding: 15px 10px;
+            padding: 10px 8px;
             text-align: center;
             border-left: 1px solid #485b6b;
         }
 
         .day-title {
             font-weight: bold;
-            font-size: 16px;
-            margin-bottom: 5px;
+            font-size: 13px;
+            margin-bottom: 3px;
         }
 
         .day-date {
-            font-size: 12px;
+            font-size: 10px;
             opacity: 0.9;
         }
 
@@ -242,6 +246,7 @@
             cursor: pointer;
             border-radius: 3px;
             transition: all 0.2s;
+            user-select: none;
         }
 
         .time-slot.default-gray {
@@ -261,6 +266,15 @@
         .time-slot:hover {
             opacity: 0.8;
             transform: scale(1.1);
+        }
+
+        .time-slot.drag-preview {
+            border: 2px solid #27ae60;
+            opacity: 0.8;
+        }
+
+        .time-slot.drag-invalid {
+            border: 2px solid #e74c3c;
         }
 
         .daily-totals {
@@ -375,7 +389,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>📅 Gestionnaire de Planning Latille</h1>
+        <h1>📅 Gestion Planning LATILLE</h1>
         <div class="controls">
             <div class="week-selector">
                 <label>Semaine</label>
@@ -517,6 +531,13 @@
         let employees = ['Antoine', 'Léa', 'Noémie', 'Christelle', 'Sandrine'];
         let schedules = {};
 
+        // Variables pour le glisser-déposer
+        let isDragging = false;
+        let dragStart = null;
+        let dragStartState = null;
+        let dragCurrentEmployee = null;
+        let dragCurrentDay = null;
+
         // Créneaux par défaut en gris
         const defaultGraySlots = ['13:00', '13:30', '14:00', '14:30'];
         const sundayGraySlots = ['13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:15', '19:30'];
@@ -524,11 +545,9 @@
         const weekdayGreenSlots = ['19:00', '19:15']; // Lundi à Samedi seulement
 
         function initializeApp() {
-            console.log('=== INITIALISATION ===');
             populateSelectors();
             loadEmployees();
             updateScheduleDisplay();
-            console.log('=== INITIALISATION COMPLETE ===');
         }
 
         function populateSelectors() {
@@ -565,7 +584,6 @@
         }
 
         function loadEmployees() {
-            // Utilise les noms par défaut
             if (employees.length !== 5) {
                 employees = ['Antoine', 'Léa', 'Noémie', 'Christelle', 'Sandrine'];
             }
@@ -655,7 +673,15 @@
                             timeSlotDiv.className = 'time-slot employee-' + (empIndex + 1);
                         }
                         
-                        timeSlotDiv.addEventListener('click', () => toggleTimeSlot(timeSlotDiv, dayIndex, slotIndex, empIndex));
+                        // Événements pour le clic simple et le glisser
+                        timeSlotDiv.addEventListener('mousedown', (e) => startDrag(e, timeSlotDiv, dayIndex, slotIndex, empIndex));
+                        timeSlotDiv.addEventListener('mouseenter', (e) => updateDrag(timeSlotDiv, dayIndex, slotIndex, empIndex));
+                        timeSlotDiv.addEventListener('click', (e) => {
+                            if (!isDragging) {
+                                toggleTimeSlot(timeSlotDiv, dayIndex, slotIndex, empIndex);
+                            }
+                        });
+                        
                         scheduleCell.appendChild(timeSlotDiv);
                     });
                     
@@ -665,6 +691,99 @@
                 container.appendChild(row);
             });
         }
+
+        function startDrag(e, element, dayIndex, slotIndex, empIndex) {
+            e.preventDefault();
+            isDragging = true;
+            dragStart = { dayIndex, slotIndex, empIndex };
+            dragCurrentEmployee = empIndex;
+            dragCurrentDay = dayIndex;
+            
+            // Déterminer l'état de départ
+            const scheduleKey = `${currentYear}-${currentWeek}`;
+            dragStartState = !!(schedules[scheduleKey] && 
+                              schedules[scheduleKey][dayIndex] && 
+                              schedules[scheduleKey][dayIndex][slotIndex] && 
+                              schedules[scheduleKey][dayIndex][slotIndex][empIndex]);
+        }
+
+        function updateDrag(element, dayIndex, slotIndex, empIndex) {
+            if (!isDragging) return;
+            
+            // Nettoyer les aperçus précédents
+            clearDragPreview();
+            
+            // Vérifier si on est sur le bon employé et jour
+            if (empIndex !== dragCurrentEmployee || dayIndex !== dragCurrentDay) {
+                element.classList.add('drag-invalid');
+                return;
+            }
+            
+            // Calculer la plage
+            const startSlot = Math.min(dragStart.slotIndex, slotIndex);
+            const endSlot = Math.max(dragStart.slotIndex, slotIndex);
+            
+            // Appliquer l'aperçu
+            for (let slot = startSlot; slot <= endSlot; slot++) {
+                const targetElement = document.querySelector(`[data-day="${dayIndex}"][data-slot="${slot}"][data-employee="${empIndex}"]`);
+                if (targetElement) {
+                    targetElement.classList.add('drag-preview');
+                }
+            }
+        }
+
+        function clearDragPreview() {
+            document.querySelectorAll('.drag-preview, .drag-invalid').forEach(el => {
+                el.classList.remove('drag-preview', 'drag-invalid');
+            });
+        }
+
+        // Événements globaux
+        document.addEventListener('mouseup', (e) => {
+            if (isDragging) {
+                const previewElements = document.querySelectorAll('.drag-preview');
+                const invalidElements = document.querySelectorAll('.drag-invalid');
+                
+                if (previewElements.length > 0 && invalidElements.length === 0) {
+                    // Appliquer les changements
+                    const scheduleKey = `${currentYear}-${currentWeek}`;
+                    if (!schedules[scheduleKey]) schedules[scheduleKey] = {};
+                    if (!schedules[scheduleKey][dragCurrentDay]) schedules[scheduleKey][dragCurrentDay] = {};
+                    
+                    previewElements.forEach(element => {
+                        const slotIndex = parseInt(element.dataset.slot);
+                        const empIndex = parseInt(element.dataset.employee);
+                        
+                        if (!schedules[scheduleKey][dragCurrentDay][slotIndex]) {
+                            schedules[scheduleKey][dragCurrentDay][slotIndex] = {};
+                        }
+                        
+                        // Inverser l'état
+                        schedules[scheduleKey][dragCurrentDay][slotIndex][empIndex] = !dragStartState;
+                        
+                        // Mettre à jour visuellement
+                        if (!dragStartState) {
+                            element.className = `time-slot employee-${empIndex + 1}`;
+                        } else {
+                            element.className = 'time-slot';
+                            const defaultClass = getDefaultClass(timeSlots[slotIndex].start, dragCurrentDay);
+                            if (defaultClass) {
+                                element.classList.add(defaultClass);
+                            }
+                        }
+                    });
+                    
+                    updateSummary();
+                }
+                
+                clearDragPreview();
+                isDragging = false;
+                dragStart = null;
+                dragStartState = null;
+                dragCurrentEmployee = null;
+                dragCurrentDay = null;
+            }
+        });
 
         function getDefaultClass(timeStart, dayIndex) {
             // Default gray slots (all days)
@@ -979,7 +1098,6 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Page chargée, initialisation...');
             initializeApp();
         });
 
