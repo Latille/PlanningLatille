@@ -172,10 +172,11 @@
         }
 
         .time-cell {
-            padding: 8px;
+            padding: 3px 6px;
             text-align: center;
             font-weight: bold;
             color: #2c3e50;
+            font-size: 11px;
         }
 
         .time-row:nth-child(odd) .time-cell {
@@ -229,9 +230,9 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            padding: 3px;
+            padding: 1px;
             border-left: 2px solid #95a5a6;
-            min-height: 35px;
+            min-height: 20px;
         }
 
         .time-slot {
@@ -523,12 +524,11 @@
         const weekdayGreenSlots = ['19:00', '19:15']; // Lundi à Samedi seulement
 
         function initializeApp() {
-            console.log('Initialisation de l\'application...');
+            console.log('=== INITIALISATION ===');
             populateSelectors();
             loadEmployees();
-            console.log('Employés chargés:', employees);
             updateScheduleDisplay();
-            console.log('Affichage mis à jour');
+            console.log('=== INITIALISATION COMPLETE ===');
         }
 
         function populateSelectors() {
@@ -565,7 +565,7 @@
         }
 
         function loadEmployees() {
-            // Utilise les noms par défaut - pas besoin de localStorage
+            // Utilise les noms par défaut
             if (employees.length !== 5) {
                 employees = ['Antoine', 'Léa', 'Noémie', 'Christelle', 'Sandrine'];
             }
@@ -774,6 +774,7 @@
                 
                 const hours = Math.floor(totalMinutes / 60);
                 const minutes = totalMinutes % 60;
+                const hoursDisplay = `${hours}h${minutes.toString().padStart(2, '0')}`;
                 
                 const remaining = (35 * 60) - totalMinutes;
                 const remainingHours = Math.floor(Math.abs(remaining) / 60);
@@ -868,22 +869,18 @@
             }
             
             employees = newEmployees;
-            // Sauvegarde en mémoire uniquement
             updateScheduleDisplay();
             closeEmployeeModal();
         }
 
         function saveSchedule() {
-            // Données sauvegardées en mémoire pendant la session
-            alert('Planning sauvegardé en mémoire ! Les données seront conservées pendant cette session.');
+            alert('Planning sauvegardé en mémoire !');
         }
 
         function loadSchedules() {
             // Les plannings sont déjà initialisés en mémoire
-            console.log('Plannings chargés en mémoire');
         }
 
-        // Ajouter fonction de téléchargement pour sauvegarder les données
         function downloadSchedules() {
             const dataToSave = {
                 employees: employees,
@@ -982,17 +979,9 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            loadSchedules();
+            console.log('Page chargée, initialisation...');
             initializeApp();
         });
-
-        // Alternative initialization for older browsers
-        window.onload = function() {
-            if (!document.querySelector('#summaryGrid').innerHTML) {
-                loadSchedules();
-                initializeApp();
-            }
-        };
 
         // Click outside modal to close
         window.addEventListener('click', (event) => {
