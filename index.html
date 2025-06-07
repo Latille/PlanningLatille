@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestionnaire de Planning</title>
+    <title>Gestionnaire de Planning Latille</title>
     <style>
         * {
             margin: 0;
@@ -374,7 +374,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>📅 Gestionnaire de Planning</h1>
+        <h1>📅 Gestionnaire de Planning Latille</h1>
         <div class="controls">
             <div class="week-selector">
                 <label>Semaine</label>
@@ -523,9 +523,12 @@
         const weekdayGreenSlots = ['19:00', '19:15']; // Lundi à Samedi seulement
 
         function initializeApp() {
+            console.log('Initialisation de l\'application...');
             populateSelectors();
             loadEmployees();
+            console.log('Employés chargés:', employees);
             updateScheduleDisplay();
+            console.log('Affichage mis à jour');
         }
 
         function populateSelectors() {
@@ -978,10 +981,18 @@
         }
 
         // Initialize on page load
-        window.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', function() {
             loadSchedules();
             initializeApp();
         });
+
+        // Alternative initialization for older browsers
+        window.onload = function() {
+            if (!document.querySelector('#summaryGrid').innerHTML) {
+                loadSchedules();
+                initializeApp();
+            }
+        };
 
         // Click outside modal to close
         window.addEventListener('click', (event) => {
