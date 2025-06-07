@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionnaire de Planning</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .week-selector {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        select {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-employees { background: #6c757d; color: white; }
+        .btn-save { background: #007bff; color: white; }
+        .btn-email { background: #28a745; color: white; }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .main-content {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .summary {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .summary h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+        }
+
+        .employee-summary {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .employee-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .hours-total {
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .hours-remaining {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .hours-negative {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .schedule-grid {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .days-header {
+            display: grid;
+            grid-template-columns: 80px repeat(7, 1fr);
+            background: #2c3e50;
+            color: white;
+        }
+
+        .time-header {
+            background: #34495e;
+            padding: 15px 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .day-header {
+            padding: 15px 10px;
+            text-align: center;
+            border-left: 1px solid #485b6b;
+        }
+
+        .day-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .day-date {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .employees-row {
+            display: grid;
+            grid-template-columns: 80px repeat(7, 1fr);
+            border-bottom: 1px solid #ecf0f1;
+            background: #ecf0f1;
+        }
+
+        .time-cell {
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .time-row:nth-child(odd) .time-cell {
+            background-color: #F7F7F7;
+        }
+
+        .time-row:nth-child(even) .time-cell {
+            background-color: #ffffff;
+        }
+
+        .employees-cell {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 5px;
+            border-left: 2px solid #95a5a6;
+            min-height: 40px;
+        }
+
+        .time-cell.employees-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .employee-label {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-size: 11px;
+            font-weight: bold;
+            color: #2c3e50;
+            padding: 2px;
+            transform: rotate(180deg);
+        }
+
+        .time-row {
+            display: grid;
+            grid-template-columns: 80px repeat(7, 1fr);
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .time-row:nth-child(odd) {
+            background-color: #F7F7F7;
+        }
+
+        .time-row:nth-child(even) {
+            background-color: #ffffff;
+        }
+
+        .schedule-cell {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 3px;
+            border-left: 2px solid #95a5a6;
+            min-height: 35px;
+        }
+
+        .time-slot {
+            width: 18px;
+            height: 18px;
+            border: 1px solid #bdc3c7;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .time-slot.default-gray {
+            background-color: #95a5a6;
+        }
+
+        .time-slot.default-green {
+            background-color: #a8d8a8;
+        }
+
+        .time-slot.employee-1 { background-color: #e74c3c; }
+        .time-slot.employee-2 { background-color: #3498db; }
+        .time-slot.employee-3 { background-color: #f39c12; }
+        .time-slot.employee-4 { background-color: #9b59b6; }
+        .time-slot.employee-5 { background-color: #f1c40f; }
+
+        .time-slot:hover {
+            opacity: 0.8;
+            transform: scale(1.1);
+        }
+
+        .daily-totals {
+            display: grid;
+            grid-template-columns: 80px repeat(7, 1fr);
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+            min-height: 35px;
+        }
+
+        .total-cell {
+            padding: 8px 6px;
+            text-align: center;
+            border-left: 2px solid rgba(255,255,255,0.2);
+            transition: background-color 0.3s ease;
+            font-size: 11px;
+        }
+
+        .total-cell:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        .total-label {
+            background: linear-gradient(135deg, #3a8bfd 0%, #00d4fd 100%);
+            font-size: 10px;
+            font-family: 'Aptos', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .daily-employee-totals {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 3px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .daily-employee-totals > div {
+            background: rgba(255,255,255,0.15);
+            padding: 2px 4px;
+            border-radius: 3px;
+            min-width: 30px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .daily-employee-totals > div:hover {
+            background: rgba(255,255,255,0.25);
+            transform: scale(1.05);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .employee-input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                padding: 0 10px;
+            }
+            
+            .time-slot {
+                width: 15px;
+                height: 15px;
+            }
+            
+            .employee-label {
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📅 Gestionnaire de Planning</h1>
+        <div class="controls">
+            <div class="week-selector">
+                <label>Semaine</label>
+                <select id="weekSelect"></select>
+                <label>Année</label>
+                <select id="yearSelect"></select>
+            </div>
+            <button class="btn btn-employees" onclick="openEmployeeModal()">👥 Gérer Employés</button>
+            <button class="btn btn-save" onclick="saveSchedule()">💾 Sauvegarder</button>
+            <button class="btn btn-save" onclick="downloadSchedules()">⬇️ Télécharger</button>
+            <button class="btn btn-employees" onclick="loadSchedulesFromFile()">⬆️ Charger</button>
+            <button class="btn btn-email" onclick="sendByEmail()">📧 Envoyer par Email</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="summary">
+            <h3>⏱️ Résumé Hebdomadaire</h3>
+            <div class="summary-grid" id="summaryGrid"></div>
+        </div>
+
+        <div class="schedule-grid">
+            <div class="days-header">
+                <div class="time-header">Horaires</div>
+                <div class="day-header">
+                    <div class="day-title">Lundi</div>
+                    <div class="day-date" id="monday-date"></div>
+                </div>
+                <div class="day-header">
+                    <div class="day-title">Mardi</div>
+                    <div class="day-date" id="tuesday-date"></div>
+                </div>
+                <div class="day-header">
+                    <div class="day-title">Mercredi</div>
+                    <div class="day-date" id="wednesday-date"></div>
+                </div>
+                <div class="day-header">
+                    <div class="day-title">Jeudi</div>
+                    <div class="day-date" id="thursday-date"></div>
+                </div>
+                <div class="day-header">
+                    <div class="day-title">Vendredi</div>
+                    <div class="day-date" id="friday-date"></div>
+                </div>
+                <div class="day-header">
+                    <div class="day-title">Samedi</div>
+                    <div class="day-date" id="saturday-date"></div>
+                </div>
+                <div class="day-header">
+                    <div class="day-title">Dimanche</div>
+                    <div class="day-date" id="sunday-date"></div>
+                </div>
+            </div>
+
+            <div class="employees-row">
+                <div class="time-cell employees-header">Employés</div>
+                <div class="employees-cell" id="monday-employees"></div>
+                <div class="employees-cell" id="tuesday-employees"></div>
+                <div class="employees-cell" id="wednesday-employees"></div>
+                <div class="employees-cell" id="thursday-employees"></div>
+                <div class="employees-cell" id="friday-employees"></div>
+                <div class="employees-cell" id="saturday-employees"></div>
+                <div class="employees-cell" id="sunday-employees"></div>
+            </div>
+
+            <div id="timeSlots"></div>
+
+            <div class="daily-totals">
+                <div class="total-cell total-label" style="font-family: 'Aptos', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 10px;">Total Jour</div>
+                <div class="total-cell" id="monday-totals"></div>
+                <div class="total-cell" id="tuesday-totals"></div>
+                <div class="total-cell" id="wednesday-totals"></div>
+                <div class="total-cell" id="thursday-totals"></div>
+                <div class="total-cell" id="friday-totals"></div>
+                <div class="total-cell" id="saturday-totals"></div>
+                <div class="total-cell" id="sunday-totals"></div>
+            </div>
+
+            <div class="daily-totals" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); min-height: 35px;">
+                <div class="total-cell total-label" style="background: linear-gradient(135deg, #0f8a7f 0%, #2ecc71 100%); font-family: 'Aptos', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 10px; display: flex; align-items: center; justify-content: center;">Équipe</div>
+                <div class="total-cell" id="monday-team-total">0h</div>
+                <div class="total-cell" id="tuesday-team-total">0h</div>
+                <div class="total-cell" id="wednesday-team-total">0h</div>
+                <div class="total-cell" id="thursday-team-total">0h</div>
+                <div class="total-cell" id="friday-team-total">0h</div>
+                <div class="total-cell" id="saturday-team-total">0h</div>
+                <div class="total-cell" id="sunday-team-total">0h</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour gérer les employés -->
+    <div id="employeeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEmployeeModal()">&times;</span>
+            <h2>Gérer les Employés</h2>
+            <div id="employeeInputs"></div>
+            <button class="btn btn-save" onclick="saveEmployees()">Sauvegarder les Noms</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration des créneaux horaires
+        const timeSlots = [
+            { start: '07:00', end: '07:30', duration: 30 },
+            { start: '07:30', end: '08:00', duration: 30 },
+            { start: '08:00', end: '08:30', duration: 30 },
+            { start: '08:30', end: '08:45', duration: 15 },
+            { start: '08:45', end: '09:00', duration: 15 },
+            { start: '09:00', end: '09:30', duration: 30 },
+            { start: '09:30', end: '10:00', duration: 30 },
+            { start: '10:00', end: '10:30', duration: 30 },
+            { start: '10:30', end: '11:00', duration: 30 },
+            { start: '11:00', end: '11:30', duration: 30 },
+            { start: '11:30', end: '12:00', duration: 30 },
+            { start: '12:00', end: '12:30', duration: 30 },
+            { start: '12:30', end: '12:45', duration: 15 },
+            { start: '12:45', end: '13:00', duration: 15 },
+            { start: '13:00', end: '13:30', duration: 30 },
+            { start: '13:30', end: '14:00', duration: 30 },
+            { start: '14:00', end: '14:30', duration: 30 },
+            { start: '14:30', end: '15:00', duration: 30 },
+            { start: '15:00', end: '15:30', duration: 30 },
+            { start: '15:30', end: '16:00', duration: 30 },
+            { start: '16:00', end: '16:30', duration: 30 },
+            { start: '16:30', end: '17:00', duration: 30 },
+            { start: '17:00', end: '17:30', duration: 30 },
+            { start: '17:30', end: '18:00', duration: 30 },
+            { start: '18:00', end: '18:30', duration: 30 },
+            { start: '18:30', end: '19:00', duration: 30 },
+            { start: '19:00', end: '19:15', duration: 15 },
+            { start: '19:15', end: '19:30', duration: 15 },
+            { start: '19:30', end: '20:00', duration: 30 }
+        ];
+
+        // État de l'application
+        let currentWeek = 23;
+        let currentYear = 2025;
+        let employees = ['Antoine', 'Léa', 'Noémie', 'Christelle', 'Sandrine'];
+        let schedules = {};
+
+        // Créneaux par défaut en gris
+        const defaultGraySlots = ['13:00', '13:30', '14:00', '14:30'];
+        const sundayGraySlots = ['13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:15', '19:30'];
+        const defaultGreenSlots = ['08:30', '08:45', '12:30', '12:45'];
+        const weekdayGreenSlots = ['19:00', '19:15']; // Lundi à Samedi seulement
+
+        function initializeApp() {
+            populateSelectors();
+            loadEmployees();
+            updateScheduleDisplay();
+        }
+
+        function populateSelectors() {
+            const weekSelect = document.getElementById('weekSelect');
+            const yearSelect = document.getElementById('yearSelect');
+            
+            // Populate weeks (1-53)
+            for (let i = 1; i <= 53; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `Semaine ${i}`;
+                if (i === currentWeek) option.selected = true;
+                weekSelect.appendChild(option);
+            }
+            
+            // Populate years
+            for (let i = 2024; i <= 2030; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                if (i === currentYear) option.selected = true;
+                yearSelect.appendChild(option);
+            }
+            
+            weekSelect.addEventListener('change', (e) => {
+                currentWeek = parseInt(e.target.value);
+                updateScheduleDisplay();
+            });
+            
+            yearSelect.addEventListener('change', (e) => {
+                currentYear = parseInt(e.target.value);
+                updateScheduleDisplay();
+            });
+        }
+
+        function loadEmployees() {
+            // Utilise les noms par défaut - pas besoin de localStorage
+            if (employees.length !== 5) {
+                employees = ['Antoine', 'Léa', 'Noémie', 'Christelle', 'Sandrine'];
+            }
+        }
+
+        function getWeekDates(year, week) {
+            const jan1 = new Date(year, 0, 1);
+            const daysToFirstMonday = (8 - jan1.getDay()) % 7;
+            const firstMonday = new Date(year, 0, 1 + daysToFirstMonday);
+            const weekStart = new Date(firstMonday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000);
+            
+            const dates = [];
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(weekStart);
+                date.setDate(weekStart.getDate() + i);
+                dates.push(date);
+            }
+            return dates;
+        }
+
+        function formatDate(date) {
+            return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        }
+
+        function updateScheduleDisplay() {
+            const dates = getWeekDates(currentYear, currentWeek);
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            
+            // Update dates in headers
+            days.forEach((day, index) => {
+                document.getElementById(`${day}-date`).textContent = formatDate(dates[index]);
+            });
+            
+            // Update employee names in each day
+            days.forEach(day => {
+                const container = document.getElementById(`${day}-employees`);
+                container.innerHTML = '';
+                employees.forEach(name => {
+                    const label = document.createElement('div');
+                    label.className = 'employee-label';
+                    label.textContent = name;
+                    container.appendChild(label);
+                });
+            });
+            
+            // Generate time slots
+            generateTimeSlots();
+            updateSummary();
+        }
+
+        function generateTimeSlots() {
+            const container = document.getElementById('timeSlots');
+            container.innerHTML = '';
+            
+            timeSlots.forEach((slot, slotIndex) => {
+                const row = document.createElement('div');
+                row.className = 'time-row';
+                
+                // Time label
+                const timeCell = document.createElement('div');
+                timeCell.className = 'time-cell';
+                timeCell.textContent = slot.start;
+                row.appendChild(timeCell);
+                
+                // Days
+                const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+                days.forEach((day, dayIndex) => {
+                    const scheduleCell = document.createElement('div');
+                    scheduleCell.className = 'schedule-cell';
+                    
+                    employees.forEach((employee, empIndex) => {
+                        const timeSlotDiv = document.createElement('div');
+                        timeSlotDiv.className = 'time-slot';
+                        timeSlotDiv.dataset.day = dayIndex;
+                        timeSlotDiv.dataset.slot = slotIndex;
+                        timeSlotDiv.dataset.employee = empIndex;
+                        
+                        // Apply default colors based on rules
+                        const defaultClass = getDefaultClass(slot.start, dayIndex);
+                        if (defaultClass) {
+                            timeSlotDiv.classList.add(defaultClass);
+                        }
+                        
+                        // Load saved state
+                        const scheduleKey = `${currentYear}-${currentWeek}`;
+                        if (schedules[scheduleKey] && schedules[scheduleKey][dayIndex] && schedules[scheduleKey][dayIndex][slotIndex] && schedules[scheduleKey][dayIndex][slotIndex][empIndex]) {
+                            timeSlotDiv.className = 'time-slot employee-' + (empIndex + 1);
+                        }
+                        
+                        timeSlotDiv.addEventListener('click', () => toggleTimeSlot(timeSlotDiv, dayIndex, slotIndex, empIndex));
+                        scheduleCell.appendChild(timeSlotDiv);
+                    });
+                    
+                    row.appendChild(scheduleCell);
+                });
+                
+                container.appendChild(row);
+            });
+        }
+
+        function getDefaultClass(timeStart, dayIndex) {
+            // Default gray slots (all days)
+            if (defaultGraySlots.includes(timeStart)) {
+                return 'default-gray';
+            }
+            
+            // Sunday specific gray slots
+            if (dayIndex === 6 && sundayGraySlots.includes(timeStart)) {
+                return 'default-gray';
+            }
+            
+            // Default green slots (all days)
+            if (defaultGreenSlots.includes(timeStart)) {
+                return 'default-green';
+            }
+            
+            // Weekday green slots (Monday to Saturday)
+            if (dayIndex < 6 && weekdayGreenSlots.includes(timeStart)) {
+                return 'default-green';
+            }
+            
+            // Sunday specific: 19:00 and 19:15 should be gray
+            if (dayIndex === 6 && weekdayGreenSlots.includes(timeStart)) {
+                return 'default-gray';
+            }
+            
+            return null;
+        }
+
+        function toggleTimeSlot(element, dayIndex, slotIndex, empIndex) {
+            // Check if past week (no modifications allowed)
+            const now = new Date();
+            const currentWeekNumber = getWeekNumber(now);
+            const currentYearNumber = now.getFullYear();
+            
+            if (currentYear < currentYearNumber || (currentYear === currentYearNumber && currentWeek < currentWeekNumber)) {
+                alert('Les plannings passés ne peuvent pas être modifiés.');
+                return;
+            }
+            
+            const scheduleKey = `${currentYear}-${currentWeek}`;
+            if (!schedules[scheduleKey]) schedules[scheduleKey] = {};
+            if (!schedules[scheduleKey][dayIndex]) schedules[scheduleKey][dayIndex] = {};
+            if (!schedules[scheduleKey][dayIndex][slotIndex]) schedules[scheduleKey][dayIndex][slotIndex] = {};
+            
+            // Toggle state
+            const isActive = schedules[scheduleKey][dayIndex][slotIndex][empIndex];
+            schedules[scheduleKey][dayIndex][slotIndex][empIndex] = !isActive;
+            
+            // Update visual
+            if (schedules[scheduleKey][dayIndex][slotIndex][empIndex]) {
+                element.className = 'time-slot employee-' + (empIndex + 1);
+            } else {
+                element.className = 'time-slot';
+                const defaultClass = getDefaultClass(timeSlots[slotIndex].start, dayIndex);
+                if (defaultClass) {
+                    element.classList.add(defaultClass);
+                }
+            }
+            
+            updateSummary();
+        }
+
+        function getWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+        }
+
+        function updateSummary() {
+            const scheduleKey = `${currentYear}-${currentWeek}`;
+            const summaryGrid = document.getElementById('summaryGrid');
+            summaryGrid.innerHTML = '';
+            
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            const employeeTotals = [0, 0, 0, 0, 0];
+            const dailyTotals = [0, 0, 0, 0, 0, 0, 0];
+            
+            // Calculate totals
+            employees.forEach((employee, empIndex) => {
+                let totalMinutes = 0;
+                
+                days.forEach((day, dayIndex) => {
+                    let dailyMinutes = 0;
+                    
+                    timeSlots.forEach((slot, slotIndex) => {
+                        if (schedules[scheduleKey] && 
+                            schedules[scheduleKey][dayIndex] && 
+                            schedules[scheduleKey][dayIndex][slotIndex] && 
+                            schedules[scheduleKey][dayIndex][slotIndex][empIndex]) {
+                            totalMinutes += slot.duration;
+                            dailyMinutes += slot.duration;
+                        }
+                    });
+                    
+                    dailyTotals[dayIndex] += dailyMinutes;
+                });
+                
+                employeeTotals[empIndex] = totalMinutes;
+                
+                // Create summary card
+                const card = document.createElement('div');
+                card.className = 'employee-summary';
+                
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                
+                const remaining = (35 * 60) - totalMinutes;
+                const remainingHours = Math.floor(Math.abs(remaining) / 60);
+                const remainingMinutes = Math.abs(remaining) % 60;
+                const remainingDisplay = `${remaining < 0 ? '-' : ''}${remainingHours}h${remainingMinutes.toString().padStart(2, '0')}`;
+                
+                card.innerHTML = `
+                    <div class="employee-name">${employee}</div>
+                    <div class="hours-total">${hoursDisplay} hebdo</div>
+                    <div class="hours-remaining ${remaining < 0 ? 'hours-negative' : ''}">(reste ${remainingDisplay} à répartir)</div>
+                `;
+                summaryGrid.appendChild(card);
+            });
+            
+            // Update daily totals
+            days.forEach((day, dayIndex) => {
+                const container = document.getElementById(`${day}-totals`);
+                container.innerHTML = '';
+                
+                const totalsDiv = document.createElement('div');
+                totalsDiv.className = 'daily-employee-totals';
+                
+                employees.forEach((employee, empIndex) => {
+                    let dailyMinutes = 0;
+                    
+                    timeSlots.forEach((slot, slotIndex) => {
+                        if (schedules[scheduleKey] && 
+                            schedules[scheduleKey][dayIndex] && 
+                            schedules[scheduleKey][dayIndex][slotIndex] && 
+                            schedules[scheduleKey][dayIndex][slotIndex][empIndex]) {
+                            dailyMinutes += slot.duration;
+                        }
+                    });
+                    
+                    const hours = Math.floor(dailyMinutes / 60);
+                    const minutes = dailyMinutes % 60;
+                    const display = `${hours}h${minutes.toString().padStart(2, '0')}`;
+                    
+                    const empTotal = document.createElement('div');
+                    empTotal.textContent = display;
+                    totalsDiv.appendChild(empTotal);
+                });
+                
+                container.appendChild(totalsDiv);
+                
+                // Update team total
+                const teamHours = Math.floor(dailyTotals[dayIndex] / 60);
+                const teamMinutes = dailyTotals[dayIndex] % 60;
+                const teamElement = document.getElementById(`${day}-team-total`);
+                teamElement.textContent = `${teamHours}h${teamMinutes.toString().padStart(2, '0')}`;
+                teamElement.style.fontSize = '10px';
+            });
+        }
+
+        function openEmployeeModal() {
+            const modal = document.getElementById('employeeModal');
+            const inputs = document.getElementById('employeeInputs');
+            inputs.innerHTML = '';
+            
+            employees.forEach((name, index) => {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'employee-input';
+                input.value = name;
+                input.placeholder = `Employé ${index + 1}`;
+                input.id = `employee-${index}`;
+                inputs.appendChild(input);
+            });
+            
+            modal.style.display = 'block';
+        }
+
+        function closeEmployeeModal() {
+            document.getElementById('employeeModal').style.display = 'none';
+        }
+
+        function saveEmployees() {
+            const newEmployees = [];
+            for (let i = 0; i < 5; i++) {
+                const input = document.getElementById(`employee-${i}`);
+                newEmployees.push(input.value || `Employé ${i + 1}`);
+            }
+            
+            // Check if past week (no modifications allowed)
+            const now = new Date();
+            const currentWeekNumber = getWeekNumber(now);
+            const currentYearNumber = now.getFullYear();
+            
+            if (currentYear < currentYearNumber || (currentYear === currentYearNumber && currentWeek < currentWeekNumber)) {
+                alert('Les noms ne peuvent pas être modifiés pour les semaines passées.');
+                return;
+            }
+            
+            employees = newEmployees;
+            // Sauvegarde en mémoire uniquement
+            updateScheduleDisplay();
+            closeEmployeeModal();
+        }
+
+        function saveSchedule() {
+            // Données sauvegardées en mémoire pendant la session
+            alert('Planning sauvegardé en mémoire ! Les données seront conservées pendant cette session.');
+        }
+
+        function loadSchedules() {
+            // Les plannings sont déjà initialisés en mémoire
+            console.log('Plannings chargés en mémoire');
+        }
+
+        // Ajouter fonction de téléchargement pour sauvegarder les données
+        function downloadSchedules() {
+            const dataToSave = {
+                employees: employees,
+                schedules: schedules,
+                savedDate: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(dataToSave, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `planning-backup-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+        }
+
+        function loadSchedulesFromFile() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            if (data.employees && data.schedules) {
+                                employees = data.employees;
+                                schedules = data.schedules;
+                                updateScheduleDisplay();
+                                alert('Données chargées avec succès !');
+                            } else {
+                                alert('Fichier invalide !');
+                            }
+                        } catch (error) {
+                            alert('Erreur lors du chargement du fichier !');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        function sendByEmail() {
+            const scheduleKey = `${currentYear}-${currentWeek}`;
+            let emailBody = `Planning Semaine ${currentWeek} - ${currentYear}\n\n`;
+            
+            const dates = getWeekDates(currentYear, currentWeek);
+            const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+            
+            employees.forEach((employee, empIndex) => {
+                emailBody += `=== ${employee} ===\n`;
+                
+                days.forEach((dayName, dayIndex) => {
+                    const date = formatDate(dates[dayIndex]);
+                    let daySchedule = [];
+                    
+                    timeSlots.forEach((slot, slotIndex) => {
+                        if (schedules[scheduleKey] && 
+                            schedules[scheduleKey][dayIndex] && 
+                            schedules[scheduleKey][dayIndex][slotIndex] && 
+                            schedules[scheduleKey][dayIndex][slotIndex][empIndex]) {
+                            daySchedule.push(`${slot.start}-${slot.end}`);
+                        }
+                    });
+                    
+                    if (daySchedule.length > 0) {
+                        emailBody += `${dayName} ${date}: ${daySchedule.join(', ')}\n`;
+                    }
+                });
+                
+                // Calculate total hours
+                let totalMinutes = 0;
+                timeSlots.forEach((slot, slotIndex) => {
+                    days.forEach((_, dayIndex) => {
+                        if (schedules[scheduleKey] && 
+                            schedules[scheduleKey][dayIndex] && 
+                            schedules[scheduleKey][dayIndex][slotIndex] && 
+                            schedules[scheduleKey][dayIndex][slotIndex][empIndex]) {
+                            totalMinutes += slot.duration;
+                        }
+                    });
+                });
+                
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                emailBody += `Total: ${hours}h${minutes.toString().padStart(2, '0')}\n\n`;
+            });
+            
+            const subject = `Planning Semaine ${currentWeek} - ${currentYear}`;
+            const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+            window.open(mailtoLink);
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSchedules();
+            initializeApp();
+        });
+
+        // Click outside modal to close
+        window.addEventListener('click', (event) => {
+            const modal = document.getElementById('employeeModal');
+            if (event.target === modal) {
+                closeEmployeeModal();
+            }
+        });
+    </script>
+</body>
+</html>
