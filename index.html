@@ -101,6 +101,58 @@
         .btn-save { background: #007bff; color: white; }
         .btn-email { background: #28a745; color: white; }
 
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: white;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            z-index: 1000;
+        }
+
+        .dropdown-content button {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            background: none;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 0;
+            transition: background-color 0.3s;
+        }
+
+        .dropdown-content button:first-child {
+            border-radius: 5px 5px 0 0;
+        }
+
+        .dropdown-content button:last-child {
+            border-radius: 0 0 5px 5px;
+        }
+
+        .dropdown-content button:hover {
+            background-color: #f1f1f1;
+        }
+
+        .dropdown-content button.danger {
+            color: #dc3545;
+        }
+
+        .dropdown-content button.danger:hover {
+            background-color: #f8d7da;
+        }
+
+        .dropdown.show .dropdown-content {
+            display: block;
+        }
+
         .btn:hover {
             opacity: 0.9;
             transform: translateY(-1px);
@@ -298,13 +350,40 @@
         .schedule-cell.closed {
             background: repeating-linear-gradient(
                 45deg,
-                #f0f0f0,
-                #f0f0f0 10px,
-                #e0e0e0 10px,
-                #e0e0e0 20px
+                #000000,
+                #000000 10px,
+                #333333 10px,
+                #333333 20px
             );
             opacity: 0.5;
             pointer-events: none;
+        }
+
+        .schedule-cell.establishment-closed {
+            background: repeating-linear-gradient(
+                45deg,
+                #000000,
+                #000000 10px,
+                #333333 10px,
+                #333333 20px
+            );
+            opacity: 0.5;
+            pointer-events: none;
+            position: relative;
+        }
+
+        .schedule-cell.establishment-closed::after {
+            content: "FERMÉ";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 1;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
         }
 
         .schedule-cell.closed::after {
@@ -313,11 +392,12 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-45deg);
-            color: #999;
+            color: #ffffff;
             font-size: 10px;
             font-weight: bold;
             pointer-events: none;
             z-index: 1;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
         }
 
         .time-row.closed .schedule-cell {
@@ -331,7 +411,8 @@
         }
 
         .day-date {
-            font-size: 10px;
+            font-size: 12px;
+            font-weight: bold;
             opacity: 0.9;
         }
 
@@ -447,7 +528,7 @@
         .daily-totals {
             display: grid;
             grid-template-columns: 80px repeat(7, 1fr);
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: #12BBFD;
             color: white;
             font-weight: bold;
             box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
@@ -467,7 +548,7 @@
         }
 
         .total-label {
-            background: linear-gradient(135deg, #3a8bfd 0%, #00d4fd 100%);
+            background: #12BBFD;
             font-size: 10px;
             font-family: 'Aptos', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
@@ -511,19 +592,76 @@
 
         .modal-content {
             background-color: white;
-            margin: 15% auto;
+            margin: 10% auto;
             padding: 20px;
             border-radius: 10px;
-            width: 80%;
-            max-width: 500px;
+            width: 90%;
+            max-width: 800px;
         }
 
         .employee-input {
             width: 100%;
-            padding: 10px;
-            margin: 5px 0;
+            padding: 8px;
+            margin: 3px 0;
             border: 1px solid #ddd;
             border-radius: 5px;
+        }
+
+        .employee-form-group {
+            margin-bottom: 8px;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 0;
+            align-items: center;
+        }
+
+        .form-row input {
+            flex: 1;
+        }
+
+        .form-row input[type="text"]:nth-child(2) {
+            flex: 2;
+        }
+
+        .form-row input[type="email"] {
+            flex: 4;
+        }
+
+        .clear-employee-btn {
+            width: 32px;
+            height: 32px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .clear-employee-btn:hover {
+            background: #c82333;
+        }
+
+        .employee-title {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            min-width: 80px;
+            flex-shrink: 0;
         }
 
         .close {
@@ -570,7 +708,14 @@
                     <select id="yearSelect"></select>
                 </div>
             </div>
-            <button class="btn btn-employees" onclick="openEmployeeModal()">Gérer Employés</button>
+            <div class="dropdown">
+                <button class="btn btn-employees" onclick="toggleDropdown()">Actions ⋮</button>
+                <div class="dropdown-content" id="actionsDropdown">
+                    <button onclick="openEmployeeModal(); closeDropdown()">Gérer Employés</button>
+                    <button onclick="openDuplicateModal(); closeDropdown()">Dupliquer Planning</button>
+                    <button class="danger" onclick="openResetModal(); closeDropdown()">Réinitialiser</button>
+                </div>
+            </div>
             <button class="btn btn-save" onclick="saveSchedule()">Sauvegarder</button>
             <button class="btn btn-save" onclick="downloadSchedules()">Télécharger</button>
             <button class="btn btn-employees" onclick="loadSchedulesFromFile()">Charger</button>
@@ -662,8 +807,8 @@
                 <div class="total-cell" id="sunday-totals"></div>
             </div>
 
-            <div class="daily-totals" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); min-height: 35px;">
-                <div class="total-cell total-label" style="background: linear-gradient(135deg, #0f8a7f 0%, #2ecc71 100%); font-family: 'Aptos', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 10px; display: flex; align-items: center; justify-content: center;">Équipe</div>
+            <div class="daily-totals" style="background: #20B077; min-height: 35px;">
+                <div class="total-cell total-label" style="background: #20B077; font-family: 'Aptos', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 10px; display: flex; align-items: center; justify-content: center;">Équipe</div>
                 <div class="total-cell" id="monday-team-total">0h</div>
                 <div class="total-cell" id="tuesday-team-total">0h</div>
                 <div class="total-cell" id="wednesday-team-total">0h</div>
@@ -682,6 +827,64 @@
             <h2>Gérer les Employés</h2>
             <div id="employeeInputs"></div>
             <button class="btn btn-save" onclick="saveEmployees()">Sauvegarder les Noms</button>
+        </div>
+    </div>
+
+    <!-- Modal pour dupliquer un planning -->
+    <div id="duplicateModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDuplicateModal()">&times;</span>
+            <h2>Dupliquer un Planning</h2>
+            <div style="margin: 20px 0;">
+                <label style="display: block; margin-bottom: 10px; font-weight: bold;">Planning source :</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <select id="sourceWeek" style="flex: 1;">
+                        <!-- Options générées dynamiquement -->
+                    </select>
+                    <select id="sourceYear" style="flex: 1;">
+                        <!-- Options générées dynamiquement -->
+                    </select>
+                </div>
+                
+                <label style="display: block; margin-bottom: 10px; font-weight: bold;">Planning destination :</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <select id="destWeek" style="flex: 1;">
+                        <!-- Options générées dynamiquement -->
+                    </select>
+                    <select id="destYear" style="flex: 1;">
+                        <!-- Options générées dynamiquement -->
+                    </select>
+                </div>
+                
+                <div id="duplicateInfo" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 15px 0; font-size: 14px;"></div>
+            </div>
+            <button class="btn btn-save" onclick="duplicatePlanning()">Dupliquer le Planning</button>
+        </div>
+    </div>
+
+    <!-- Modal pour réinitialiser un planning -->
+    <div id="resetModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeResetModal()">&times;</span>
+            <h2>Réinitialiser un Planning</h2>
+            <div style="margin: 20px 0;">
+                <label style="display: block; margin-bottom: 10px; font-weight: bold;">Semaine à réinitialiser :</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <select id="resetWeek" style="flex: 1;">
+                        <!-- Options générées dynamiquement -->
+                    </select>
+                    <select id="resetYear" style="flex: 1;">
+                        <!-- Options générées dynamiquement -->
+                    </select>
+                </div>
+                
+                <div id="resetInfo" style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 15px 0; font-size: 14px;"></div>
+                
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 5px; margin: 15px 0;">
+                    <strong>⚠️ Attention :</strong> Cette action supprimera définitivement tous les plannings et fermetures de cette semaine. Cette action est irréversible.
+                </div>
+            </div>
+            <button class="btn" style="background: #dc3545; color: white;" onclick="resetPlanning()">Réinitialiser le Planning</button>
         </div>
     </div>
 
@@ -720,9 +923,15 @@
         ];
 
         // État de l'application
-        let currentWeek = 23;
+        let currentWeek = 22;
         let currentYear = 2025;
-        let employees = ['Antoine', 'Léa', 'Noémie', 'Christelle', 'Sandrine'];
+        let employees = [
+            { firstName: 'Antoine', lastName: '', email: '' },
+            { firstName: 'Léa', lastName: '', email: '' },
+            { firstName: 'Noémie', lastName: '', email: '' },
+            { firstName: 'Christelle', lastName: '', email: '' },
+            { firstName: 'Sandrine', lastName: '', email: '' }
+        ];
         let schedules = {};
         let closures = {}; // Nouveau : gestion des fermetures
 
@@ -740,6 +949,16 @@
         const weekdayGreenSlots = ['19:00', '19:15']; // Lundi à Samedi seulement
 
         function toggleDayClosure(dayIndex) {
+            // Vérifier si on peut modifier cette semaine
+            const now = new Date();
+            const currentWeekNumber = getWeekNumber(now);
+            const currentYearNumber = now.getFullYear();
+            
+            if (currentYear < currentYearNumber || (currentYear === currentYearNumber && currentWeek < currentWeekNumber)) {
+                alert('Les plannings passés ne peuvent pas être modifiés.');
+                return;
+            }
+            
             const closureKey = `${currentYear}-${currentWeek}`;
             if (!closures[closureKey]) closures[closureKey] = {};
             
@@ -808,7 +1027,7 @@
             document.querySelectorAll('.time-row').forEach(row => {
                 const cells = row.querySelectorAll('.schedule-cell');
                 if (cells[dayIndex]) {
-                    cells[dayIndex].classList.remove('closed');
+                    cells[dayIndex].classList.remove('closed', 'establishment-closed');
                     // Supprimer tout texte qui pourrait avoir été ajouté
                     cells[dayIndex].style.position = 'relative';
                     const existingText = cells[dayIndex].querySelector('.closed-text');
@@ -824,7 +1043,7 @@
                 document.querySelectorAll('.time-row').forEach(row => {
                     const cells = row.querySelectorAll('.schedule-cell');
                     if (cells[dayIndex]) {
-                        cells[dayIndex].classList.add('closed');
+                        cells[dayIndex].classList.add('establishment-closed');
                     }
                 });
             } else if (state === 'am-closed') {
@@ -836,7 +1055,7 @@
                         if (row) {
                             const cells = row.querySelectorAll('.schedule-cell');
                             if (cells[dayIndex]) {
-                                cells[dayIndex].classList.add('closed');
+                                cells[dayIndex].classList.add('establishment-closed');
                             }
                         }
                     }
@@ -850,7 +1069,7 @@
                         if (row) {
                             const cells = row.querySelectorAll('.schedule-cell');
                             if (cells[dayIndex]) {
-                                cells[dayIndex].classList.add('closed');
+                                cells[dayIndex].classList.add('establishment-closed');
                             }
                         }
                     }
@@ -947,7 +1166,21 @@
 
         function loadEmployees() {
             if (employees.length !== 5) {
-                employees = ['Antoine', 'Léa', 'Noémie', 'Christelle', 'Sandrine'];
+                employees = [
+                    { firstName: 'Antoine', lastName: '', email: '' },
+                    { firstName: 'Léa', lastName: '', email: '' },
+                    { firstName: 'Noémie', lastName: '', email: '' },
+                    { firstName: 'Christelle', lastName: '', email: '' },
+                    { firstName: 'Sandrine', lastName: '', email: '' }
+                ];
+            }
+            // Migration pour compatibilité avec l'ancien format
+            if (typeof employees[0] === 'string') {
+                employees = employees.map(name => ({
+                    firstName: name,
+                    lastName: '',
+                    email: ''
+                }));
             }
         }
 
@@ -983,10 +1216,10 @@
             days.forEach(day => {
                 const container = document.getElementById(`${day}-employees`);
                 container.innerHTML = '';
-                employees.forEach(name => {
+                employees.forEach(employee => {
                     const label = document.createElement('div');
                     label.className = 'employee-label';
-                    label.textContent = name;
+                    label.textContent = employee.firstName || 'Employé';
                     container.appendChild(label);
                 });
             });
@@ -1056,6 +1289,16 @@
         }
 
         function startDrag(e, element, dayIndex, slotIndex, empIndex) {
+            // Vérifier si on peut modifier cette semaine
+            const now = new Date();
+            const currentWeekNumber = getWeekNumber(now);
+            const currentYearNumber = now.getFullYear();
+            
+            if (currentYear < currentYearNumber || (currentYear === currentYearNumber && currentWeek < currentWeekNumber)) {
+                alert('Les plannings passés ne peuvent pas être modifiés.');
+                return;
+            }
+            
             e.preventDefault();
             isDragging = true;
             dragStart = { dayIndex, slotIndex, empIndex };
@@ -1184,7 +1427,7 @@
                 return;
             }
             
-            // Check if past week (no modifications allowed)
+            // Seules la semaine courante et les semaines futures sont modifiables
             const now = new Date();
             const currentWeekNumber = getWeekNumber(now);
             const currentYearNumber = now.getFullYear();
@@ -1283,7 +1526,7 @@
                 }
                 
                 card.innerHTML = `
-                    <div class="employee-name">${employee}</div>
+                    <div class="employee-name">${employee.firstName || 'Employé'}</div>
                     <div class="hours-total">${hoursDisplay} hebdo</div>
                     <div class="hours-remaining ${remaining < 0 ? 'hours-negative' : ''}">(reste ${remainingDisplay} à répartir)</div>
                 `;
@@ -1335,17 +1578,57 @@
             const inputs = document.getElementById('employeeInputs');
             inputs.innerHTML = '';
             
-            employees.forEach((name, index) => {
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'employee-input';
-                input.value = name;
-                input.placeholder = `Employé ${index + 1}`;
-                input.id = `employee-${index}`;
-                inputs.appendChild(input);
+            employees.forEach((employee, index) => {
+                const group = document.createElement('div');
+                group.className = 'employee-form-group';
+                
+                group.innerHTML = `
+                    <div class="form-row">
+                        <div class="employee-title">Employé ${index + 1}</div>
+                        <input type="text" class="employee-input" value="${employee.firstName}" 
+                               placeholder="Prénom" id="employee-firstName-${index}" 
+                               oninput="formatFirstName(this)">
+                        <input type="text" class="employee-input" value="${employee.lastName}" 
+                               placeholder="Nom" id="employee-lastName-${index}" 
+                               oninput="formatLastName(this)">
+                        <input type="email" class="employee-input" value="${employee.email}" 
+                               placeholder="Email" id="employee-email-${index}" 
+                               oninput="formatEmail(this)">
+                        <button type="button" class="clear-employee-btn" onclick="clearEmployee(${index})" 
+                                title="Effacer toutes les données">✗</button>
+                    </div>
+                `;
+                
+                inputs.appendChild(group);
             });
             
             modal.style.display = 'block';
+        }
+
+        // Fonction pour effacer les données d'un employé
+        function clearEmployee(index) {
+            if (confirm(`Êtes-vous sûr de vouloir effacer toutes les données de l'employé ${index + 1} ?`)) {
+                document.getElementById(`employee-firstName-${index}`).value = '';
+                document.getElementById(`employee-lastName-${index}`).value = '';
+                document.getElementById(`employee-email-${index}`).value = '';
+            }
+        }
+
+        // Fonctions de formatage automatique
+        function formatFirstName(input) {
+            let value = input.value;
+            if (value.length > 0) {
+                value = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+                input.value = value;
+            }
+        }
+
+        function formatLastName(input) {
+            input.value = input.value.toUpperCase();
+        }
+
+        function formatEmail(input) {
+            input.value = input.value.toLowerCase();
         }
 
         function closeEmployeeModal() {
@@ -1355,23 +1638,21 @@
         function saveEmployees() {
             const newEmployees = [];
             for (let i = 0; i < 5; i++) {
-                const input = document.getElementById(`employee-${i}`);
-                newEmployees.push(input.value || `Employé ${i + 1}`);
-            }
-            
-            // Check if past week (no modifications allowed)
-            const now = new Date();
-            const currentWeekNumber = getWeekNumber(now);
-            const currentYearNumber = now.getFullYear();
-            
-            if (currentYear < currentYearNumber || (currentYear === currentYearNumber && currentWeek < currentWeekNumber)) {
-                alert('Les noms ne peuvent pas être modifiés pour les semaines passées.');
-                return;
+                const firstName = document.getElementById(`employee-firstName-${i}`).value || '';
+                const lastName = document.getElementById(`employee-lastName-${i}`).value || '';
+                const email = document.getElementById(`employee-email-${i}`).value || '';
+                
+                newEmployees.push({
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: email
+                });
             }
             
             employees = newEmployees;
             updateScheduleDisplay();
             closeEmployeeModal();
+            alert('Informations des employés sauvegardées !');
         }
 
         function saveSchedule() {
@@ -1437,7 +1718,7 @@
             const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
             
             employees.forEach((employee, empIndex) => {
-                emailBody += `=== ${employee} ===\n`;
+                emailBody += `=== ${employee.firstName} ${employee.lastName} ===\n`;
                 
                 days.forEach((dayName, dayIndex) => {
                     const date = formatDate(dates[dayIndex]);
@@ -1487,9 +1768,313 @@
 
         // Click outside modal to close
         window.addEventListener('click', (event) => {
-            const modal = document.getElementById('employeeModal');
-            if (event.target === modal) {
+            const employeeModal = document.getElementById('employeeModal');
+            const duplicateModal = document.getElementById('duplicateModal');
+            const resetModal = document.getElementById('resetModal');
+            
+            if (event.target === employeeModal) {
                 closeEmployeeModal();
+            }
+            if (event.target === duplicateModal) {
+                closeDuplicateModal();
+            }
+            if (event.target === resetModal) {
+                closeResetModal();
+            }
+        });
+
+        // Fonctions pour la duplication de planning
+        function openDuplicateModal() {
+            const modal = document.getElementById('duplicateModal');
+            populateDuplicateSelectors();
+            updateDuplicateInfo();
+            modal.style.display = 'block';
+        }
+
+        function closeDuplicateModal() {
+            document.getElementById('duplicateModal').style.display = 'none';
+        }
+
+        function populateDuplicateSelectors() {
+            const sourceWeek = document.getElementById('sourceWeek');
+            const sourceYear = document.getElementById('sourceYear');
+            const destWeek = document.getElementById('destWeek');
+            const destYear = document.getElementById('destYear');
+            
+            // Vider les sélecteurs
+            [sourceWeek, sourceYear, destWeek, destYear].forEach(select => {
+                select.innerHTML = '';
+            });
+            
+            // Remplir les semaines (1-53)
+            for (let i = 1; i <= 53; i++) {
+                const sourceOption = document.createElement('option');
+                sourceOption.value = i;
+                sourceOption.textContent = `Semaine ${i}`;
+                if (i === currentWeek) sourceOption.selected = true;
+                sourceWeek.appendChild(sourceOption);
+                
+                const destOption = document.createElement('option');
+                destOption.value = i;
+                destOption.textContent = `Semaine ${i}`;
+                if (i === currentWeek) destOption.selected = true;
+                destWeek.appendChild(destOption);
+            }
+            
+            // Remplir les années
+            for (let i = 2024; i <= 2030; i++) {
+                const sourceOption = document.createElement('option');
+                sourceOption.value = i;
+                sourceOption.textContent = i;
+                if (i === currentYear) sourceOption.selected = true;
+                sourceYear.appendChild(sourceOption);
+                
+                const destOption = document.createElement('option');
+                destOption.value = i;
+                destOption.textContent = i;
+                if (i === currentYear) destOption.selected = true;
+                destYear.appendChild(destOption);
+            }
+            
+            // Ajouter les événements de changement
+            [sourceWeek, sourceYear, destWeek, destYear].forEach(select => {
+                select.addEventListener('change', updateDuplicateInfo);
+            });
+        }
+
+        function updateDuplicateInfo() {
+            const sourceWeek = parseInt(document.getElementById('sourceWeek').value);
+            const sourceYear = parseInt(document.getElementById('sourceYear').value);
+            const destWeek = parseInt(document.getElementById('destWeek').value);
+            const destYear = parseInt(document.getElementById('destYear').value);
+            const infoDiv = document.getElementById('duplicateInfo');
+            
+            let message = '';
+            let isValid = true;
+            
+            // Vérifier si même semaine
+            if (sourceWeek === destWeek && sourceYear === destYear) {
+                message = '❌ La semaine source et destination ne peuvent pas être identiques.';
+                isValid = false;
+            }
+            // Vérifier si destination est dans le passé
+            else {
+                const now = new Date();
+                const currentWeekNumber = getWeekNumber(now);
+                const currentYearNumber = now.getFullYear();
+                
+                if (destYear < currentYearNumber || (destYear === currentYearNumber && destWeek < currentWeekNumber)) {
+                    message = '❌ Impossible de dupliquer vers une semaine passée.';
+                    isValid = false;
+                }
+                // Vérifier si la source a des données
+                else {
+                    const sourceKey = `${sourceYear}-${sourceWeek}`;
+                    const hasSourceData = schedules[sourceKey] && Object.keys(schedules[sourceKey]).length > 0;
+                    const hasSourceClosures = closures[sourceKey] && Object.keys(closures[sourceKey]).length > 0;
+                    
+                    if (!hasSourceData && !hasSourceClosures) {
+                        message = '⚠️ La semaine source ne contient aucun planning.';
+                        isValid = false;
+                    } else {
+                        // Vérifier si destination a des données
+                        const destKey = `${destYear}-${destWeek}`;
+                        const hasDestData = schedules[destKey] && Object.keys(schedules[destKey]).length > 0;
+                        const hasDestClosures = closures[destKey] && Object.keys(closures[destKey]).length > 0;
+                        
+                        if (hasDestData || hasDestClosures) {
+                            message = '⚠️ La semaine destination contient déjà un planning qui sera écrasé.';
+                        } else {
+                            message = '✅ Prêt à dupliquer le planning.';
+                        }
+                    }
+                }
+            }
+            
+            infoDiv.innerHTML = message;
+            infoDiv.style.color = isValid ? (message.includes('écrasé') ? '#ff9800' : '#4caf50') : '#f44336';
+            
+            // Activer/désactiver le bouton
+            const duplicateBtn = document.querySelector('#duplicateModal .btn-save');
+            duplicateBtn.disabled = !isValid;
+            duplicateBtn.style.opacity = isValid ? '1' : '0.5';
+            duplicateBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
+        }
+
+        function duplicatePlanning() {
+            const sourceWeek = parseInt(document.getElementById('sourceWeek').value);
+            const sourceYear = parseInt(document.getElementById('sourceYear').value);
+            const destWeek = parseInt(document.getElementById('destWeek').value);
+            const destYear = parseInt(document.getElementById('destYear').value);
+            
+            const sourceKey = `${sourceYear}-${sourceWeek}`;
+            const destKey = `${destYear}-${destWeek}`;
+            
+            // Vérifier si destination a des données et demander confirmation
+            const hasDestData = schedules[destKey] && Object.keys(schedules[destKey]).length > 0;
+            const hasDestClosures = closures[destKey] && Object.keys(closures[destKey]).length > 0;
+            
+            if (hasDestData || hasDestClosures) {
+                if (!confirm(`La semaine ${destWeek}/${destYear} contient déjà un planning.\n\nÊtes-vous sûr de vouloir l'écraser ?`)) {
+                    return;
+                }
+            }
+            
+            // Copier les plannings
+            if (schedules[sourceKey]) {
+                schedules[destKey] = JSON.parse(JSON.stringify(schedules[sourceKey]));
+            } else {
+                delete schedules[destKey];
+            }
+            
+            // Copier les fermetures
+            if (closures[sourceKey]) {
+                closures[destKey] = JSON.parse(JSON.stringify(closures[sourceKey]));
+            } else {
+                delete closures[destKey];
+            }
+            
+            // Basculer vers la semaine dupliquée
+            currentWeek = destWeek;
+            currentYear = destYear;
+            document.getElementById('weekSelect').value = currentWeek;
+            document.getElementById('yearSelect').value = currentYear;
+            
+            // Fermer la modal et mettre à jour l'affichage
+            closeDuplicateModal();
+            updateScheduleDisplay();
+            
+            alert(`Planning de la semaine ${sourceWeek}/${sourceYear} dupliqué avec succès vers la semaine ${destWeek}/${destYear} !`);
+        }
+
+        // Fonctions pour la réinitialisation de planning
+        function openResetModal() {
+            const modal = document.getElementById('resetModal');
+            populateResetSelectors();
+            updateResetInfo();
+            modal.style.display = 'block';
+        }
+
+        function closeResetModal() {
+            document.getElementById('resetModal').style.display = 'none';
+        }
+
+        function populateResetSelectors() {
+            const resetWeek = document.getElementById('resetWeek');
+            const resetYear = document.getElementById('resetYear');
+            
+            // Vider les sélecteurs
+            resetWeek.innerHTML = '';
+            resetYear.innerHTML = '';
+            
+            // Remplir les semaines (1-53) - seules les semaines modifiables
+            const now = new Date();
+            const currentWeekNumber = getWeekNumber(now);
+            const currentYearNumber = now.getFullYear();
+            
+            for (let i = 1; i <= 53; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `Semaine ${i}`;
+                if (i === currentWeek) option.selected = true;
+                resetWeek.appendChild(option);
+            }
+            
+            // Remplir les années
+            for (let i = 2024; i <= 2030; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                if (i === currentYear) option.selected = true;
+                resetYear.appendChild(option);
+            }
+            
+            // Ajouter les événements de changement
+            resetWeek.addEventListener('change', updateResetInfo);
+            resetYear.addEventListener('change', updateResetInfo);
+        }
+
+        function updateResetInfo() {
+            const resetWeek = parseInt(document.getElementById('resetWeek').value);
+            const resetYear = parseInt(document.getElementById('resetYear').value);
+            const infoDiv = document.getElementById('resetInfo');
+            
+            let message = '';
+            let isValid = true;
+            
+            // Vérifier si c'est une semaine passée
+            const now = new Date();
+            const currentWeekNumber = getWeekNumber(now);
+            const currentYearNumber = now.getFullYear();
+            
+            if (resetYear < currentYearNumber || (resetYear === currentYearNumber && resetWeek < currentWeekNumber)) {
+                message = '❌ Impossible de réinitialiser une semaine passée.';
+                isValid = false;
+            } else {
+                // Vérifier si la semaine a des données
+                const resetKey = `${resetYear}-${resetWeek}`;
+                const hasData = schedules[resetKey] && Object.keys(schedules[resetKey]).length > 0;
+                const hasClosures = closures[resetKey] && Object.keys(closures[resetKey]).length > 0;
+                
+                if (!hasData && !hasClosures) {
+                    message = '⚠️ Cette semaine ne contient aucun planning à réinitialiser.';
+                    isValid = false;
+                } else {
+                    message = `✅ Prêt à réinitialiser la semaine ${resetWeek}/${resetYear}.`;
+                }
+            }
+            
+            infoDiv.innerHTML = message;
+            infoDiv.style.color = isValid ? '#4caf50' : '#f44336';
+            
+            // Activer/désactiver le bouton
+            const resetBtn = document.querySelector('#resetModal .btn');
+            resetBtn.disabled = !isValid;
+            resetBtn.style.opacity = isValid ? '1' : '0.5';
+            resetBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
+        }
+
+        function resetPlanning() {
+            const resetWeek = parseInt(document.getElementById('resetWeek').value);
+            const resetYear = parseInt(document.getElementById('resetYear').value);
+            
+            if (!confirm(`Êtes-vous absolument sûr de vouloir réinitialiser la semaine ${resetWeek}/${resetYear} ?\n\nCette action supprimera définitivement :\n- Tous les plannings des employés\n- Tous les états de fermeture\n\nCette action est IRRÉVERSIBLE.`)) {
+                return;
+            }
+            
+            const resetKey = `${resetYear}-${resetWeek}`;
+            
+            // Supprimer les données
+            delete schedules[resetKey];
+            delete closures[resetKey];
+            
+            // Si c'est la semaine actuelle, mettre à jour l'affichage
+            if (resetWeek === currentWeek && resetYear === currentYear) {
+                updateScheduleDisplay();
+            }
+            
+            // Fermer la modal
+            closeResetModal();
+            
+            alert(`Semaine ${resetWeek}/${resetYear} réinitialisée avec succès !`);
+        }
+
+        // Fonctions pour le menu déroulant Actions
+        function toggleDropdown() {
+            const dropdown = document.querySelector('.dropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        function closeDropdown() {
+            const dropdown = document.querySelector('.dropdown');
+            dropdown.classList.remove('show');
+        }
+
+        // Fermer le dropdown si on clique ailleurs
+        document.addEventListener('click', function(event) {
+            const dropdown = document.querySelector('.dropdown');
+            if (!dropdown.contains(event.target)) {
+                dropdown.classList.remove('show');
             }
         });
     </script>
