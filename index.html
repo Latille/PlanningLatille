@@ -30,7 +30,7 @@
         window.firestoreSDK = { doc, setDoc, getDoc, collection, getDocs, deleteDoc };
         window.firebaseReady = true;
 
-        // Initialiser l'application une fois Firebase prêt
+        // Initialiser l'application une fois Firebase prêt.
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
                 window.initializeApp();
