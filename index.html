@@ -30,7 +30,7 @@
         window.firestoreSDK = { doc, setDoc, getDoc, collection, getDocs, deleteDoc };
         window.firebaseReady = true;
 
-        // Initialiser l'application une fois Firebase prêt.
+        // Initialiser l'application une fois Firebase prêt
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
                 window.initializeApp();
@@ -958,8 +958,8 @@
             { start: '19:30', end: '20:00', duration: 30 }
         ];
 
-        // État de l'application
-        let currentWeek = 22;
+        // État de l'application - Mise à jour semaine courante
+        let currentWeek = 23;
         let currentYear = 2025;
         let employees = [
             { firstName: 'Antoine', lastName: '', email: '' },
@@ -985,10 +985,8 @@
         const weekdayGreenSlots = ['19:00', '19:15']; // Lundi à Samedi seulement
 
         function toggleDayClosure(dayIndex) {
-            // Vérifier si on peut modifier cette semaine
-            const now = new Date();
-            const currentWeekNumber = getWeekNumber(now);
-            const currentYearNumber = now.getFullYear();
+            // Vérification des permissions avec debug
+            const { currentWeekNumber, currentYearNumber } = getCurrentWeekInfo();
             
             if (currentYear < currentYearNumber || (currentYear === currentYearNumber && currentWeek < currentWeekNumber)) {
                 alert('Les plannings passés ne peuvent pas être modifiés.');
@@ -1411,10 +1409,8 @@
         }
 
         function startDrag(e, element, dayIndex, slotIndex, empIndex) {
-            // Vérifier si on peut modifier cette semaine
-            const now = new Date();
-            const currentWeekNumber = getWeekNumber(now);
-            const currentYearNumber = now.getFullYear();
+            // Vérification des permissions avec debug
+            const { currentWeekNumber, currentYearNumber } = getCurrentWeekInfo();
             
             if (currentYear < currentYearNumber || (currentYear === currentYearNumber && currentWeek < currentWeekNumber)) {
                 alert('Les plannings passés ne peuvent pas être modifiés.');
@@ -1552,10 +1548,8 @@
                 return;
             }
             
-            // Seules la semaine courante et les semaines futures sont modifiables
-            const now = new Date();
-            const currentWeekNumber = getWeekNumber(now);
-            const currentYearNumber = now.getFullYear();
+            // Vérification des permissions avec debug
+            const { currentWeekNumber, currentYearNumber } = getCurrentWeekInfo();
             
             if (currentYear < currentYearNumber || (currentYear === currentYearNumber && currentWeek < currentWeekNumber)) {
                 alert('Les plannings passés ne peuvent pas être modifiés.');
@@ -1589,11 +1583,25 @@
         }
 
         function getWeekNumber(date) {
-            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-            const dayNum = d.getUTCDay() || 7;
-            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-            return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+            // Calcul plus précis du numéro de semaine ISO
+            const target = new Date(date.valueOf());
+            const dayNr = (date.getDay() + 6) % 7;
+            target.setDate(target.getDate() - dayNr + 3);
+            const firstThursday = target.valueOf();
+            target.setMonth(0, 1);
+            if (target.getDay() !== 4) {
+                target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+            }
+            return 1 + Math.ceil((firstThursday - target) / 604800000);
+        }
+
+        function getCurrentWeekInfo() {
+            const now = new Date();
+            const currentWeekNumber = getWeekNumber(now);
+            const currentYearNumber = now.getFullYear();
+            
+            // Debug retiré - problème résolu
+            return { currentWeekNumber, currentYearNumber };
         }
 
         function updateSummary() {
