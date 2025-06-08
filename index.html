@@ -4,6 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion Planning LATILLE</title>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyB70gXioCFDN7qBQ21vDGviGSzb7Sg1slQ",
+            authDomain: "planning-latille.firebaseapp.com",
+            projectId: "planning-latille",
+            storageBucket: "planning-latille.firebasestorage.app",
+            messagingSenderId: "363904305106",
+            appId: "1:363904305106:web:ecb94628d4eaaa25a72a0b"
+        };
+
+        // Initialiser Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Exposer Firebase globalement
+        window.firebaseApp = app;
+        window.firestore = db;
+        window.firestoreSDK = { doc, setDoc, getDoc, collection, getDocs, deleteDoc };
+        window.firebaseReady = true;
+
+        // Initialiser l'application une fois Firebase prêt
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                window.initializeApp();
+            });
+        } else {
+            window.initializeApp();
+        }
+    </script>
     <style>
         * {
             margin: 0;
@@ -717,6 +752,7 @@
                 </div>
             </div>
             <button class="btn btn-save" onclick="saveSchedule()">Sauvegarder</button>
+            <button class="btn btn-save" onclick="loadSchedules()">Recharger</button>
             <button class="btn btn-save" onclick="downloadSchedules()">Télécharger</button>
             <button class="btn btn-employees" onclick="loadSchedulesFromFile()">Charger</button>
             <button class="btn btn-email" onclick="sendByEmail()">Envoyer par Email</button>
@@ -985,6 +1021,9 @@
             
             closures[closureKey][dayIndex] = nextState;
             updateClosureDisplay();
+            
+            // Auto-sauvegarde sur Firebase
+            saveSchedulesToFirebase();
         }
 
         function updateClosureDisplay() {
@@ -1125,10 +1164,93 @@
             }
         }
 
-        function initializeApp() {
+        // Initialize on page load - sera appelé par Firebase
+        window.initializeApp = function() {
             populateSelectors();
             loadEmployees();
+            loadSchedulesFromFirebase();
             updateScheduleDisplay();
+        };
+
+        // Fonctions Firebase avec vérification
+        async function saveSchedulesToFirebase() {
+            if (!window.firebaseReady || !window.firestoreSDK) {
+                console.log('Firebase pas encore prêt, sauvegarde ignorée');
+                return false;
+            }
+
+            try {
+                const { doc, setDoc } = window.firestoreSDK;
+                
+                // Sauvegarder les employés
+                await setDoc(doc(window.firestore, 'planning-data', 'employees'), {
+                    employees: employees,
+                    lastUpdated: new Date().toISOString()
+                });
+
+                // Sauvegarder les plannings
+                for (const [key, schedule] of Object.entries(schedules)) {
+                    await setDoc(doc(window.firestore, 'planning-data', `schedule-${key}`), {
+                        schedule: schedule,
+                        lastUpdated: new Date().toISOString()
+                    });
+                }
+
+                // Sauvegarder les fermetures
+                for (const [key, closure] of Object.entries(closures)) {
+                    await setDoc(doc(window.firestore, 'planning-data', `closure-${key}`), {
+                        closure: closure,
+                        lastUpdated: new Date().toISOString()
+                    });
+                }
+
+                console.log('Données sauvegardées sur Firebase');
+                return true;
+            } catch (error) {
+                console.error('Erreur sauvegarde Firebase:', error);
+                return false;
+            }
+        }
+
+        async function loadSchedulesFromFirebase() {
+            if (!window.firebaseReady || !window.firestoreSDK) {
+                console.log('Firebase pas encore prêt, chargement par défaut');
+                loadEmployees();
+                return;
+            }
+
+            try {
+                const { doc, getDoc, collection, getDocs } = window.firestoreSDK;
+                
+                // Charger les employés
+                const employeesDoc = await getDoc(doc(window.firestore, 'planning-data', 'employees'));
+                if (employeesDoc.exists()) {
+                    employees = employeesDoc.data().employees || employees;
+                }
+
+                // Charger tous les documents de planning-data
+                const planningCollection = collection(window.firestore, 'planning-data');
+                const snapshot = await getDocs(planningCollection);
+                
+                snapshot.forEach((docSnapshot) => {
+                    const data = docSnapshot.data();
+                    const docId = docSnapshot.id;
+                    
+                    if (docId.startsWith('schedule-')) {
+                        const key = docId.replace('schedule-', '');
+                        schedules[key] = data.schedule;
+                    } else if (docId.startsWith('closure-')) {
+                        const key = docId.replace('closure-', '');
+                        closures[key] = data.closure;
+                    }
+                });
+
+                console.log('Données chargées depuis Firebase');
+            } catch (error) {
+                console.error('Erreur chargement Firebase:', error);
+                // Utiliser les données par défaut en cas d'erreur
+                loadEmployees();
+            }
         }
 
         function populateSelectors() {
@@ -1380,6 +1502,9 @@
                     });
                     
                     updateSummary();
+                    
+                    // Auto-sauvegarde sur Firebase
+                    saveSchedulesToFirebase();
                 }
                 
                 clearDragPreview();
@@ -1458,6 +1583,9 @@
             }
             
             updateSummary();
+            
+            // Auto-sauvegarde sur Firebase
+            saveSchedulesToFirebase();
         }
 
         function getWeekNumber(date) {
@@ -1652,15 +1780,32 @@
             employees = newEmployees;
             updateScheduleDisplay();
             closeEmployeeModal();
-            alert('Informations des employés sauvegardées !');
+            
+            // Sauvegarder sur Firebase
+            saveSchedulesToFirebase().then(success => {
+                if (success) {
+                    alert('Informations des employés sauvegardées sur Firebase !');
+                } else {
+                    alert('Informations sauvegardées localement (erreur Firebase)');
+                }
+            });
         }
 
         function saveSchedule() {
-            alert('Planning sauvegardé en mémoire !');
+            saveSchedulesToFirebase().then(success => {
+                if (success) {
+                    alert('Planning sauvegardé sur Firebase !');
+                } else {
+                    alert('Erreur lors de la sauvegarde sur Firebase');
+                }
+            });
         }
 
         function loadSchedules() {
-            // Les plannings sont déjà initialisés en mémoire
+            loadSchedulesFromFirebase().then(() => {
+                updateScheduleDisplay();
+                alert('Données rechargées depuis Firebase !');
+            });
         }
 
         function downloadSchedules() {
@@ -1761,10 +1906,7 @@
             window.open(mailtoLink);
         }
 
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeApp();
-        });
+        // L'initialisation est maintenant gérée par le module Firebase
 
         // Click outside modal to close
         window.addEventListener('click', (event) => {
@@ -1944,7 +2086,14 @@
             closeDuplicateModal();
             updateScheduleDisplay();
             
-            alert(`Planning de la semaine ${sourceWeek}/${sourceYear} dupliqué avec succès vers la semaine ${destWeek}/${destYear} !`);
+            // Sauvegarder sur Firebase
+            saveSchedulesToFirebase().then(success => {
+                if (success) {
+                    alert(`Planning de la semaine ${sourceWeek}/${sourceYear} dupliqué avec succès vers la semaine ${destWeek}/${destYear} et sauvegardé sur Firebase !`);
+                } else {
+                    alert(`Planning dupliqué localement (erreur Firebase)`);
+                }
+            });
         }
 
         // Fonctions pour la réinitialisation de planning
@@ -2056,7 +2205,14 @@
             // Fermer la modal
             closeResetModal();
             
-            alert(`Semaine ${resetWeek}/${resetYear} réinitialisée avec succès !`);
+            // Sauvegarder sur Firebase
+            saveSchedulesToFirebase().then(success => {
+                if (success) {
+                    alert(`Semaine ${resetWeek}/${resetYear} réinitialisée avec succès et sauvegardée sur Firebase !`);
+                } else {
+                    alert(`Semaine réinitialisée localement (erreur Firebase)`);
+                }
+            });
         }
 
         // Fonctions pour le menu déroulant Actions
