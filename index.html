@@ -8,7 +8,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
 
         // Configuration Firebase
         const firebaseConfig = {
@@ -27,7 +27,7 @@
         // Exposer Firebase globalement
         window.firebaseApp = app;
         window.firestore = db;
-        window.firestoreSDK = { doc, setDoc, getDoc, collection, getDocs, deleteDoc };
+        window.firestoreSDK = { doc, setDoc, getDoc, collection, getDocs, deleteDoc, onSnapshot };
         window.firebaseReady = true;
 
         // Initialiser l'application une fois Firebase prêt
@@ -971,6 +971,10 @@
         let schedules = {};
         let closures = {}; // Nouveau : gestion des fermetures
 
+        // Variables pour la synchronisation temps réel
+        let activeListeners = {};
+        let isUpdatingFromFirebase = false;
+
         // Variables pour le glisser-déposer
         let isDragging = false;
         let dragStart = null;
@@ -1020,8 +1024,10 @@
             closures[closureKey][dayIndex] = nextState;
             updateClosureDisplay();
             
-            // Auto-sauvegarde sur Firebase
-            saveSchedulesToFirebase();
+            // Auto-sauvegarde sur Firebase (seulement si pas de mise à jour Firebase en cours)
+            if (!isUpdatingFromFirebase) {
+                saveSchedulesToFirebase();
+            }
         }
 
         function updateClosureDisplay() {
@@ -1244,11 +1250,127 @@
                 });
 
                 console.log('Données chargées depuis Firebase');
+                
+                // Démarrer l'écoute temps réel après le chargement initial
+                setupRealtimeListeners();
+                
             } catch (error) {
                 console.error('Erreur chargement Firebase:', error);
                 // Utiliser les données par défaut en cas d'erreur
                 loadEmployees();
             }
+        }
+
+        function setupRealtimeListeners() {
+            if (!window.firebaseReady || !window.firestoreSDK) {
+                return;
+            }
+
+            const { doc, onSnapshot } = window.firestoreSDK;
+
+            // Nettoyer les anciens listeners
+            Object.values(activeListeners).forEach(unsubscribe => unsubscribe());
+            activeListeners = {};
+
+            // Écouter les changements des employés
+            activeListeners.employees = onSnapshot(
+                doc(window.firestore, 'planning-data', 'employees'),
+                (docSnapshot) => {
+                    if (isUpdatingFromFirebase) return;
+                    
+                    if (docSnapshot.exists()) {
+                        const newEmployees = docSnapshot.data().employees;
+                        if (JSON.stringify(newEmployees) !== JSON.stringify(employees)) {
+                            isUpdatingFromFirebase = true;
+                            employees = newEmployees;
+                            updateScheduleDisplay();
+                            isUpdatingFromFirebase = false;
+                            console.log('🔄 Employés mis à jour depuis Firebase');
+                        }
+                    }
+                },
+                (error) => console.error('Erreur listener employés:', error)
+            );
+
+            // Écouter les changements de la semaine courante (planning + fermetures)
+            setupCurrentWeekListeners();
+        }
+
+        function setupCurrentWeekListeners() {
+            if (!window.firebaseReady || !window.firestoreSDK) {
+                return;
+            }
+
+            const { doc, onSnapshot } = window.firestoreSDK;
+            const currentKey = `${currentYear}-${currentWeek}`;
+
+            // Nettoyer les listeners de la semaine précédente
+            if (activeListeners.currentSchedule) {
+                activeListeners.currentSchedule();
+                delete activeListeners.currentSchedule;
+            }
+            if (activeListeners.currentClosure) {
+                activeListeners.currentClosure();
+                delete activeListeners.currentClosure;
+            }
+
+            // Écouter les changements du planning de la semaine courante
+            activeListeners.currentSchedule = onSnapshot(
+                doc(window.firestore, 'planning-data', `schedule-${currentKey}`),
+                (docSnapshot) => {
+                    if (isUpdatingFromFirebase) return;
+                    
+                    if (docSnapshot.exists()) {
+                        const newSchedule = docSnapshot.data().schedule;
+                        if (JSON.stringify(newSchedule) !== JSON.stringify(schedules[currentKey])) {
+                            isUpdatingFromFirebase = true;
+                            schedules[currentKey] = newSchedule;
+                            updateScheduleDisplay();
+                            isUpdatingFromFirebase = false;
+                            console.log(`🔄 Planning semaine ${currentKey} mis à jour depuis Firebase`);
+                        }
+                    } else {
+                        // Document supprimé
+                        if (schedules[currentKey]) {
+                            isUpdatingFromFirebase = true;
+                            delete schedules[currentKey];
+                            updateScheduleDisplay();
+                            isUpdatingFromFirebase = false;
+                            console.log(`🗑️ Planning semaine ${currentKey} supprimé`);
+                        }
+                    }
+                },
+                (error) => console.error('Erreur listener planning:', error)
+            );
+
+            // Écouter les changements des fermetures de la semaine courante
+            activeListeners.currentClosure = onSnapshot(
+                doc(window.firestore, 'planning-data', `closure-${currentKey}`),
+                (docSnapshot) => {
+                    if (isUpdatingFromFirebase) return;
+                    
+                    if (docSnapshot.exists()) {
+                        const newClosure = docSnapshot.data().closure;
+                        if (JSON.stringify(newClosure) !== JSON.stringify(closures[currentKey])) {
+                            isUpdatingFromFirebase = true;
+                            closures[currentKey] = newClosure;
+                            updateClosureDisplay();
+                            isUpdatingFromFirebase = false;
+                            console.log(`🔄 Fermetures semaine ${currentKey} mises à jour depuis Firebase`);
+                        }
+                    } else {
+                        // Document supprimé
+                        if (closures[currentKey]) {
+                            isUpdatingFromFirebase = true;
+                            delete closures[currentKey];
+                            updateClosureDisplay();
+                            isUpdatingFromFirebase = false;
+                            console.log(`🗑️ Fermetures semaine ${currentKey} supprimées`);
+                        }
+                    }
+                },
+                (error) => console.error('Erreur listener fermetures:', error)
+            );
         }
 
         function populateSelectors() {
@@ -1348,6 +1470,11 @@
             generateTimeSlots();
             updateSummary();
             updateClosureDisplay();
+            
+            // Mettre à jour les listeners pour la nouvelle semaine (seulement si pas de mise à jour Firebase en cours)
+            if (!isUpdatingFromFirebase) {
+                setupCurrentWeekListeners();
+            }
         }
 
         function generateTimeSlots() {
@@ -1499,8 +1626,10 @@
                     
                     updateSummary();
                     
-                    // Auto-sauvegarde sur Firebase
-                    saveSchedulesToFirebase();
+                    // Auto-sauvegarde sur Firebase (seulement si pas de mise à jour Firebase en cours)
+                    if (!isUpdatingFromFirebase) {
+                        saveSchedulesToFirebase();
+                    }
                 }
                 
                 clearDragPreview();
@@ -1578,8 +1707,10 @@
             
             updateSummary();
             
-            // Auto-sauvegarde sur Firebase
-            saveSchedulesToFirebase();
+            // Auto-sauvegarde sur Firebase (seulement si pas de mise à jour Firebase en cours)
+            if (!isUpdatingFromFirebase) {
+                saveSchedulesToFirebase();
+            }
         }
 
         function getWeekNumber(date) {
