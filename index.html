@@ -658,15 +658,20 @@
         }
 
         .form-row input {
-            flex: 1;
+            flex: none;
         }
 
         .form-row input[type="text"]:nth-child(2) {
-            flex: 2;
+            width: 120px; /* Prénom */
+        }
+
+        .form-row input[type="text"]:nth-child(3) {
+            width: 250px; /* Nom */
         }
 
         .form-row input[type="email"] {
-            flex: 4;
+            flex: 1; /* Email prend l'espace restant */
+            min-width: 200px;
         }
 
         .clear-employee-btn {
@@ -1427,15 +1432,23 @@
         }
 
         function getWeekDates(year, week) {
-            const jan1 = new Date(year, 0, 1);
-            const daysToFirstMonday = (8 - jan1.getDay()) % 7;
-            const firstMonday = new Date(year, 0, 1 + daysToFirstMonday);
-            const weekStart = new Date(firstMonday.getTime() + (week - 1) * 7 * 24 * 60 * 60 * 1000);
+            // Calcul ISO 8601 : la semaine 1 est celle qui contient le premier jeudi de l'année
+            const jan4 = new Date(year, 0, 4); // 4 janvier est toujours dans la semaine 1
+            const jan4Day = jan4.getDay() || 7; // Dimanche = 7 au lieu de 0
             
+            // Trouver le lundi de la semaine 1
+            const firstMondayOfYear = new Date(jan4);
+            firstMondayOfYear.setDate(jan4.getDate() - jan4Day + 1);
+            
+            // Calculer le lundi de la semaine demandée
+            const mondayOfWeek = new Date(firstMondayOfYear);
+            mondayOfWeek.setDate(firstMondayOfYear.getDate() + (week - 1) * 7);
+            
+            // Générer les 7 dates de la semaine
             const dates = [];
             for (let i = 0; i < 7; i++) {
-                const date = new Date(weekStart);
-                date.setDate(weekStart.getDate() + i);
+                const date = new Date(mondayOfWeek);
+                date.setDate(mondayOfWeek.getDate() + i);
                 dates.push(date);
             }
             return dates;
@@ -1714,16 +1727,18 @@
         }
 
         function getWeekNumber(date) {
-            // Calcul plus précis du numéro de semaine ISO
-            const target = new Date(date.valueOf());
-            const dayNr = (date.getDay() + 6) % 7;
-            target.setDate(target.getDate() - dayNr + 3);
-            const firstThursday = target.valueOf();
-            target.setMonth(0, 1);
-            if (target.getDay() !== 4) {
-                target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
-            }
-            return 1 + Math.ceil((firstThursday - target) / 604800000);
+            // Calcul ISO 8601 : semaine commence le lundi, semaine 1 contient le premier jeudi
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            
+            // Jeudi de cette semaine
+            d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+            
+            // 4 janvier est toujours dans la semaine 1
+            const week1 = new Date(d.getFullYear(), 0, 4);
+            
+            // Calculer le nombre de semaines
+            return 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
         }
 
         function getCurrentWeekInfo() {
@@ -1731,7 +1746,6 @@
             const currentWeekNumber = getWeekNumber(now);
             const currentYearNumber = now.getFullYear();
             
-            // Debug retiré - problème résolu
             return { currentWeekNumber, currentYearNumber };
         }
 
@@ -2045,8 +2059,6 @@
             window.open(mailtoLink);
         }
 
-        // L'initialisation est maintenant gérée par le module Firebase
-
         // Click outside modal to close
         window.addEventListener('click', (event) => {
             const employeeModal = document.getElementById('employeeModal');
@@ -2182,7 +2194,7 @@
             duplicateBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
         }
 
-        function duplicatePlanning() {
+        async function duplicatePlanning() {
             const sourceWeek = parseInt(document.getElementById('sourceWeek').value);
             const sourceYear = parseInt(document.getElementById('sourceYear').value);
             const destWeek = parseInt(document.getElementById('destWeek').value);
@@ -2201,38 +2213,82 @@
                 }
             }
             
-            // Copier les plannings
-            if (schedules[sourceKey]) {
-                schedules[destKey] = JSON.parse(JSON.stringify(schedules[sourceKey]));
-            } else {
-                delete schedules[destKey];
-            }
-            
-            // Copier les fermetures
-            if (closures[sourceKey]) {
-                closures[destKey] = JSON.parse(JSON.stringify(closures[sourceKey]));
-            } else {
-                delete closures[destKey];
-            }
-            
-            // Basculer vers la semaine dupliquée
-            currentWeek = destWeek;
-            currentYear = destYear;
-            document.getElementById('weekSelect').value = currentWeek;
-            document.getElementById('yearSelect').value = currentYear;
-            
-            // Fermer la modal et mettre à jour l'affichage
-            closeDuplicateModal();
-            updateScheduleDisplay();
-            
-            // Sauvegarder sur Firebase
-            saveSchedulesToFirebase().then(success => {
-                if (success) {
-                    alert(`Planning de la semaine ${sourceWeek}/${sourceYear} dupliqué avec succès vers la semaine ${destWeek}/${destYear} et sauvegardé sur Firebase !`);
+            try {
+                // Copier les plannings localement
+                if (schedules[sourceKey]) {
+                    schedules[destKey] = JSON.parse(JSON.stringify(schedules[sourceKey]));
+                    console.log(`Planning copié de ${sourceKey} vers ${destKey}`);
                 } else {
-                    alert(`Planning dupliqué localement (erreur Firebase)`);
+                    delete schedules[destKey];
+                    console.log(`Aucun planning source à copier pour ${sourceKey}`);
                 }
-            });
+                
+                // Copier les fermetures localement
+                if (closures[sourceKey]) {
+                    closures[destKey] = JSON.parse(JSON.stringify(closures[sourceKey]));
+                    console.log(`Fermetures copiées de ${sourceKey} vers ${destKey}`);
+                } else {
+                    delete closures[destKey];
+                    console.log(`Aucune fermeture source à copier pour ${sourceKey}`);
+                }
+                
+                // Sauvegarder sur Firebase
+                if (window.firebaseReady && window.firestoreSDK) {
+                    const { doc, setDoc, deleteDoc } = window.firestoreSDK;
+                    
+                    // Sauvegarder ou supprimer le planning destination
+                    if (schedules[destKey]) {
+                        await setDoc(doc(window.firestore, 'planning-data', `schedule-${destKey}`), {
+                            schedule: schedules[destKey],
+                            lastUpdated: new Date().toISOString()
+                        });
+                        console.log(`Planning ${destKey} sauvegardé sur Firebase`);
+                    } else {
+                        try {
+                            await deleteDoc(doc(window.firestore, 'planning-data', `schedule-${destKey}`));
+                            console.log(`Planning ${destKey} supprimé de Firebase`);
+                        } catch (error) {
+                            console.log(`Aucun planning ${destKey} à supprimer sur Firebase`);
+                        }
+                    }
+                    
+                    // Sauvegarder ou supprimer les fermetures destination
+                    if (closures[destKey]) {
+                        await setDoc(doc(window.firestore, 'planning-data', `closure-${destKey}`), {
+                            closure: closures[destKey],
+                            lastUpdated: new Date().toISOString()
+                        });
+                        console.log(`Fermetures ${destKey} sauvegardées sur Firebase`);
+                    } else {
+                        try {
+                            await deleteDoc(doc(window.firestore, 'planning-data', `closure-${destKey}`));
+                            console.log(`Fermetures ${destKey} supprimées de Firebase`);
+                        } catch (error) {
+                            console.log(`Aucune fermeture ${destKey} à supprimer sur Firebase`);
+                        }
+                    }
+                }
+                
+                // Basculer vers la semaine dupliquée
+                currentWeek = destWeek;
+                currentYear = destYear;
+                document.getElementById('weekSelect').value = currentWeek;
+                document.getElementById('yearSelect').value = currentYear;
+                
+                // Fermer la modal
+                closeDuplicateModal();
+                
+                // Forcer la mise à jour de l'affichage
+                setTimeout(() => {
+                    updateScheduleDisplay();
+                }, 100);
+                
+                alert(`Planning de la semaine ${sourceWeek}/${sourceYear} dupliqué avec succès vers la semaine ${destWeek}/${destYear} !`);
+                
+            } catch (error) {
+                console.error('Erreur lors de la duplication:', error);
+                alert('Erreur lors de la duplication. Consultez la console pour plus de détails.');
+            }
         }
 
         // Fonctions pour la réinitialisation de planning
@@ -2255,11 +2311,7 @@
             resetWeek.innerHTML = '';
             resetYear.innerHTML = '';
             
-            // Remplir les semaines (1-53) - seules les semaines modifiables
-            const now = new Date();
-            const currentWeekNumber = getWeekNumber(now);
-            const currentYearNumber = now.getFullYear();
-            
+            // Remplir les semaines (1-53)
             for (let i = 1; i <= 53; i++) {
                 const option = document.createElement('option');
                 option.value = i;
@@ -2322,7 +2374,7 @@
             resetBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
         }
 
-        function resetPlanning() {
+        async function resetPlanning() {
             const resetWeek = parseInt(document.getElementById('resetWeek').value);
             const resetYear = parseInt(document.getElementById('resetYear').value);
             
@@ -2332,26 +2384,49 @@
             
             const resetKey = `${resetYear}-${resetWeek}`;
             
-            // Supprimer les données
-            delete schedules[resetKey];
-            delete closures[resetKey];
-            
-            // Si c'est la semaine actuelle, mettre à jour l'affichage
-            if (resetWeek === currentWeek && resetYear === currentYear) {
-                updateScheduleDisplay();
-            }
-            
-            // Fermer la modal
-            closeResetModal();
-            
-            // Sauvegarder sur Firebase
-            saveSchedulesToFirebase().then(success => {
-                if (success) {
-                    alert(`Semaine ${resetWeek}/${resetYear} réinitialisée avec succès et sauvegardée sur Firebase !`);
-                } else {
-                    alert(`Semaine réinitialisée localement (erreur Firebase)`);
+            try {
+                // Supprimer les données localement
+                delete schedules[resetKey];
+                delete closures[resetKey];
+                
+                // Supprimer sur Firebase
+                if (window.firebaseReady && window.firestoreSDK) {
+                    const { doc, deleteDoc } = window.firestoreSDK;
+                    
+                    // Supprimer le document de planning
+                    try {
+                        await deleteDoc(doc(window.firestore, 'planning-data', `schedule-${resetKey}`));
+                        console.log(`Document schedule-${resetKey} supprimé de Firebase`);
+                    } catch (error) {
+                        console.log(`Document schedule-${resetKey} n'existait pas sur Firebase`);
+                    }
+                    
+                    // Supprimer le document de fermetures
+                    try {
+                        await deleteDoc(doc(window.firestore, 'planning-data', `closure-${resetKey}`));
+                        console.log(`Document closure-${resetKey} supprimé de Firebase`);
+                    } catch (error) {
+                        console.log(`Document closure-${resetKey} n'existait pas sur Firebase`);
+                    }
                 }
-            });
+                
+                // Fermer la modal
+                closeResetModal();
+                
+                // Si c'est la semaine actuellement affichée, forcer la mise à jour
+                if (resetWeek === currentWeek && resetYear === currentYear) {
+                    // Forcer une mise à jour complète de l'affichage
+                    setTimeout(() => {
+                        updateScheduleDisplay();
+                    }, 100);
+                }
+                
+                alert(`Semaine ${resetWeek}/${resetYear} réinitialisée avec succès !`);
+                
+            } catch (error) {
+                console.error('Erreur lors de la réinitialisation:', error);
+                alert('Erreur lors de la réinitialisation. Consultez la console pour plus de détails.');
+            }
         }
 
         // Fonctions pour le menu déroulant Actions
@@ -2372,6 +2447,9 @@
                 dropdown.classList.remove('show');
             }
         });
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
