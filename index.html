@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion Planning LATILLE</title>
     
+    <!-- Bibliothèque SheetJS pour l'export Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Bibliothèque jsPDF pour la génération PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
@@ -756,10 +763,8 @@
                     <button class="danger" onclick="openResetModal(); closeDropdown()">Réinitialiser</button>
                 </div>
             </div>
-            <button class="btn btn-save" onclick="saveSchedule()">Sauvegarder</button>
             <button class="btn btn-save" onclick="loadSchedules()">Recharger</button>
-            <button class="btn btn-save" onclick="downloadSchedules()">Télécharger</button>
-            <button class="btn btn-employees" onclick="loadSchedulesFromFile()">Charger</button>
+            <button class="btn btn-save" onclick="openPrintableVersion()">Planning Impression</button>
             <button class="btn btn-email" onclick="sendByEmail()">Envoyer par Email</button>
         </div>
     </div>
@@ -1944,16 +1949,6 @@
             });
         }
 
-        function saveSchedule() {
-            saveSchedulesToFirebase().then(success => {
-                if (success) {
-                    alert('Planning sauvegardé sur Firebase !');
-                } else {
-                    alert('Erreur lors de la sauvegarde sur Firebase');
-                }
-            });
-        }
-
         function loadSchedules() {
             loadSchedulesFromFirebase().then(() => {
                 updateScheduleDisplay();
@@ -1961,51 +1956,384 @@
             });
         }
 
-        function downloadSchedules() {
-            const dataToSave = {
-                employees: employees,
-                schedules: schedules,
-                closures: closures,
-                savedDate: new Date().toISOString()
-            };
+        function openPrintableVersion() {
+            // Générer le HTML d'impression
+            const printHTML = generatePrintableHTML();
             
-            const dataStr = JSON.stringify(dataToSave, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            // Ouvrir dans une nouvelle fenêtre
+            const printWindow = window.open('', '_blank', 'width=1200,height=800');
+            printWindow.document.write(printHTML);
+            printWindow.document.close();
             
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(dataBlob);
-            link.download = `planning-backup-${new Date().toISOString().split('T')[0]}.json`;
-            link.click();
+            // Auto-focus pour impression
+            printWindow.focus();
         }
 
-        function loadSchedulesFromFile() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = function(event) {
-                const file = event.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        try {
-                            const data = JSON.parse(e.target.result);
-                            if (data.employees && data.schedules) {
-                                employees = data.employees;
-                                schedules = data.schedules;
-                                closures = data.closures || {};
-                                updateScheduleDisplay();
-                                alert('Données chargées avec succès !');
+        function generatePrintableHTML() {
+            const scheduleKey = `${currentYear}-${currentWeek}`;
+            const dates = getWeekDates(currentYear, currentWeek);
+            const firstDate = dates[0].toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const lastDate = dates[6].toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            
+            let html = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planning Semaine ${currentWeek} - ${currentYear}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+            color: black;
+            padding: 10mm;
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 8mm;
+        }
+
+        @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .planning-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 8px;
+            table-layout: fixed;
+        }
+
+        .planning-table th,
+        .planning-table td {
+            border: 1px solid #95a5a6;
+            padding: 1px;
+            text-align: center;
+            vertical-align: middle;
+            height: 15px;
+        }
+
+        .time-col {
+            width: 55px;
+            background: #f8f9fa;
+            font-weight: bold;
+            font-size: 8px;
+            padding: 1px;
+            word-wrap: break-word;
+        }
+
+        .employee-col {
+            width: 30px;
+        }
+
+        /* Séparation entre les jours */
+        .day-separator {
+            border-right: 3px solid #2c3e50 !important;
+            position: relative;
+        }
+
+        .day-separator::after {
+            content: '';
+            position: absolute;
+            right: -2px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: transparent;
+        }
+
+        .day-header {
+            background: #1a252f;
+            color: white;
+            font-weight: bold;
+            font-size: 9px;
+            padding: 3px 2px;
+            height: 30px;
+        }
+
+        .employee-header {
+            background: #ecf0f1;
+            font-weight: bold;
+            height: 38px;
+            position: relative;
+        }
+
+        .employee-name {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            font-size: 8px;
+            font-weight: bold;
+            height: 35px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .time-slot {
+            height: 14px;
+            position: relative;
+        }
+
+        .assigned {
+            font-weight: bold;
+            color: white;
+            font-size: 11px;
+        }
+
+        .closed {
+            background: repeating-linear-gradient(
+                45deg,
+                #cccccc,
+                #cccccc 3px,
+                #999999 3px,
+                #999999 6px
+            );
+            color: #666;
+            font-style: italic;
+            font-size: 6px;
+        }
+
+        /* Couleurs des employés */
+        .employee-1 { background: #e74c3c; color: white; }
+        .employee-2 { background: #3498db; color: white; }
+        .employee-3 { background: #f39c12; color: white; }
+        .employee-4 { background: #9b59b6; color: white; }
+        .employee-5 { background: #f1c40f; color: black; }
+
+        /* Créneaux par défaut */
+        .default-gray { background: #95a5a6; }
+        .default-green { background: #a8d8a8; }
+
+        /* Lignes alternées */
+        .planning-table tr:nth-child(even) .time-slot:not(.assigned):not(.closed):not(.default-gray):not(.default-green) {
+            background: #f7f7f7;
+        }
+
+        .total-row {
+            background: #12BBFD;
+            color: white;
+            font-weight: bold;
+            font-size: 7px;
+            height: 20px;
+        }
+
+        .team-total-row {
+            background: #20B077;
+            color: white;
+            font-weight: bold;
+            font-size: 8px;
+            height: 20px;
+        }
+
+        .print-buttons {
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .print-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 5px;
+            font-size: 14px;
+        }
+
+        .print-btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print print-buttons">
+        <button class="print-btn" onclick="window.print()">🖨️ Imprimer / PDF</button>
+        <button class="print-btn" onclick="window.close()">❌ Fermer</button>
+    </div>
+
+    <div class="header">
+        <div class="title">GESTION PLANNING SPAR LATILLE</div>
+        <div class="subtitle">Semaine ${currentWeek} - Du ${firstDate} au ${lastDate}</div>
+    </div>
+
+    <table class="planning-table">
+        <!-- En-têtes des jours -->
+        <tr>
+            <th class="time-col">Horaires</th>`;
+
+            // En-têtes des jours (5 colonnes par jour)
+            const dayNames = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+            dayNames.forEach((dayName, dayIndex) => {
+                const dateStr = dates[dayIndex].toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                html += `<th colspan="5" class="day-header">${dayName}<br>${dateStr}</th>`;
+            });
+
+            html += `
+        </tr>
+        
+        <!-- Ligne des employés -->
+        <tr>
+            <td class="time-col employee-header">Employés</td>`;
+
+            // Prénoms des employés (répétés pour chaque jour)
+            for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+                employees.forEach((employee, empIndex) => {
+                    // Ajouter la classe day-separator à la dernière colonne de chaque jour (sauf dimanche)
+                    const isLastEmployeeOfDay = empIndex === employees.length - 1 && dayIndex < 6;
+                    const separatorClass = isLastEmployeeOfDay ? ' day-separator' : '';
+                    
+                    html += `<td class="employee-col employee-header${separatorClass}">
+                        <div class="employee-name">${employee.firstName || 'E'}</div>
+                    </td>`;
+                });
+            }
+
+            html += `
+        </tr>`;
+
+            // Lignes des créneaux horaires
+            timeSlots.forEach((slot, slotIndex) => {
+                html += `
+        <tr>
+            <td class="time-col">${slot.start}</td>`;
+
+                // Pour chaque jour
+                for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+                    // Pour chaque employé
+                    employees.forEach((employee, empIndex) => {
+                        let cellClass = 'time-slot';
+                        let cellContent = '';
+
+                        // Vérifier les fermetures
+                        if (isSlotClosed(dayIndex, slotIndex)) {
+                            cellClass += ' closed';
+                            cellContent = 'FERMÉ';
+                        } else {
+                            // Vérifier si cet employé est assigné
+                            if (schedules[scheduleKey] && 
+                                schedules[scheduleKey][dayIndex] && 
+                                schedules[scheduleKey][dayIndex][slotIndex] && 
+                                schedules[scheduleKey][dayIndex][slotIndex][empIndex]) {
+                                cellClass += ` employee-${empIndex + 1} assigned`;
+                                cellContent = '●';
                             } else {
-                                alert('Fichier invalide !');
+                                // Vérifier les créneaux par défaut
+                                const defaultClass = getDefaultClass(slot.start, dayIndex);
+                                if (defaultClass === 'default-gray') {
+                                    cellClass += ' default-gray';
+                                } else if (defaultClass === 'default-green') {
+                                    cellClass += ' default-green';
+                                }
                             }
-                        } catch (error) {
-                            alert('Erreur lors du chargement du fichier !');
                         }
-                    };
-                    reader.readAsText(file);
+
+                        // Ajouter la classe day-separator à la dernière colonne de chaque jour (sauf dimanche)
+                        const isLastEmployeeOfDay = empIndex === employees.length - 1 && dayIndex < 6;
+                        if (isLastEmployeeOfDay) {
+                            cellClass += ' day-separator';
+                        }
+
+                        html += `<td class="${cellClass}">${cellContent}</td>`;
+                    });
                 }
-            };
-            input.click();
+
+                html += `
+        </tr>`;
+            });
+
+            // Ligne totaux par employé
+            html += `
+        <tr class="total-row">
+            <td class="time-col">Total Jour</td>`;
+
+            for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+                employees.forEach((employee, empIndex) => {
+                    let totalMinutes = 0;
+                    timeSlots.forEach((slot, slotIndex) => {
+                        if (schedules[scheduleKey] && 
+                            schedules[scheduleKey][dayIndex] && 
+                            schedules[scheduleKey][dayIndex][slotIndex] && 
+                            schedules[scheduleKey][dayIndex][slotIndex][empIndex]) {
+                            totalMinutes += slot.duration;
+                        }
+                    });
+
+                    const hours = Math.floor(totalMinutes / 60);
+                    const minutes = totalMinutes % 60;
+                    
+                    // Ajouter la classe day-separator à la dernière colonne de chaque jour (sauf dimanche)
+                    const isLastEmployeeOfDay = empIndex === employees.length - 1 && dayIndex < 6;
+                    const separatorClass = isLastEmployeeOfDay ? ' day-separator' : '';
+                    
+                    html += `<td class="total-row${separatorClass}">${hours}h${minutes.toString().padStart(2, '0')}</td>`;
+                });
+            }
+
+            html += `
+        </tr>
+        
+        <!-- Ligne total équipe -->
+        <tr class="team-total-row">
+            <td class="time-col">Équipe</td>`;
+
+            for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+                let totalMinutes = 0;
+                employees.forEach((employee, empIndex) => {
+                    timeSlots.forEach((slot, slotIndex) => {
+                        if (schedules[scheduleKey] && 
+                            schedules[scheduleKey][dayIndex] && 
+                            schedules[scheduleKey][dayIndex][slotIndex] && 
+                            schedules[scheduleKey][dayIndex][slotIndex][empIndex]) {
+                            totalMinutes += slot.duration;
+                        }
+                    });
+                });
+
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                const teamTotal = `${hours}h${minutes.toString().padStart(2, '0')}`;
+
+                // Total sur la première colonne, autres vides
+                html += `<td colspan="5">${teamTotal}</td>`;
+            }
+
+            html += `
+        </tr>
+    </table>
+</body>
+</html>`;
+
+            return html;
         }
 
         function sendByEmail() {
