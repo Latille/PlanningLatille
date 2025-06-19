@@ -318,7 +318,7 @@
 
         .days-header {
             display: grid;
-            grid-template-columns: 80px repeat(7, 1fr);
+            grid-template-columns: 90px repeat(7, 1fr);
             background: #1a252f;
             color: white;
         }
@@ -460,7 +460,7 @@
 
         .employees-row {
             display: grid;
-            grid-template-columns: 80px repeat(7, 1fr);
+            grid-template-columns: 90px repeat(7, 1fr);
             border-bottom: 1px solid #ecf0f1;
             background: #ecf0f1;
         }
@@ -470,7 +470,8 @@
             text-align: center;
             font-weight: bold;
             color: #2c3e50;
-            font-size: 11px;
+            font-size: 10px;
+            line-height: 1.1;
         }
 
         .time-row:nth-child(odd) .time-cell {
@@ -508,7 +509,7 @@
 
         .time-row {
             display: grid;
-            grid-template-columns: 80px repeat(7, 1fr);
+            grid-template-columns: 90px repeat(7, 1fr);
             border-bottom: 1px solid #ecf0f1;
         }
 
@@ -569,7 +570,7 @@
 
         .daily-totals {
             display: grid;
-            grid-template-columns: 80px repeat(7, 1fr);
+            grid-template-columns: 90px repeat(7, 1fr);
             background: #12BBFD;
             color: white;
             font-weight: bold;
@@ -1524,7 +1525,7 @@
                 // Time label
                 const timeCell = document.createElement('div');
                 timeCell.className = 'time-cell';
-                timeCell.textContent = slot.start;
+                timeCell.textContent = `${slot.start}-${slot.end}`;
                 row.appendChild(timeCell);
                 
                 // Days
@@ -2043,10 +2044,10 @@
         }
 
         .time-col {
-            width: 55px;
+            width: 70px;
             background: #f8f9fa;
             font-weight: bold;
-            font-size: 8px;
+            font-size: 7px;
             padding: 1px;
             word-wrap: break-word;
         }
@@ -2228,7 +2229,7 @@
             timeSlots.forEach((slot, slotIndex) => {
                 html += `
         <tr>
-            <td class="time-col">${slot.start}</td>`;
+            <td class="time-col">${slot.start}-${slot.end}</td>`;
 
                 // Pour chaque jour
                 for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
