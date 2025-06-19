@@ -955,7 +955,8 @@
             { start: '13:30', end: '14:00', duration: 30 },
             { start: '14:00', end: '14:30', duration: 30 },
             { start: '14:30', end: '15:00', duration: 30 },
-            { start: '15:00', end: '15:30', duration: 30 },
+            { start: '15:00', end: '15:15', duration: 15 },
+            { start: '15:15', end: '15:30', duration: 15 },
             { start: '15:30', end: '16:00', duration: 30 },
             { start: '16:00', end: '16:30', duration: 30 },
             { start: '16:30', end: '17:00', duration: 30 },
@@ -968,9 +969,26 @@
             { start: '19:30', end: '20:00', duration: 30 }
         ];
 
-        // État de l'application - Mise à jour semaine courante
-        let currentWeek = 23;
-        let currentYear = 2025;
+        // Fonction pour calculer le numéro de semaine ISO 8601
+        function getWeekNumber(date) {
+            // Calcul ISO 8601 : semaine commence le lundi, semaine 1 contient le premier jeudi
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            
+            // Jeudi de cette semaine
+            d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+            
+            // 4 janvier est toujours dans la semaine 1
+            const week1 = new Date(d.getFullYear(), 0, 4);
+            
+            // Calculer le nombre de semaines
+            return 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+        }
+
+        // État de l'application - Initialisation sur la semaine courante
+        const now = new Date();
+        let currentWeek = getWeekNumber(now);
+        let currentYear = now.getFullYear();
         let employees = [
             { firstName: 'Antoine', lastName: '', email: '' },
             { firstName: 'Léa', lastName: '', email: '' },
@@ -994,8 +1012,8 @@
 
         // Créneaux par défaut en gris
         const defaultGraySlots = ['13:00', '13:30', '14:00', '14:30'];
-        const sundayGraySlots = ['13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:15', '19:30'];
-        const defaultGreenSlots = ['08:30', '08:45', '12:30', '12:45'];
+        const sundayGraySlots = ['13:00', '13:30', '14:00', '14:30', '15:00', '15:15', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:15', '19:30'];
+        const defaultGreenSlots = ['08:30', '08:45', '12:30', '12:45', '15:00', '15:15'];
         const weekdayGreenSlots = ['19:00', '19:15']; // Lundi à Samedi seulement
 
         function toggleDayClosure(dayIndex) {
@@ -1729,21 +1747,6 @@
             if (!isUpdatingFromFirebase) {
                 saveSchedulesToFirebase();
             }
-        }
-
-        function getWeekNumber(date) {
-            // Calcul ISO 8601 : semaine commence le lundi, semaine 1 contient le premier jeudi
-            const d = new Date(date);
-            d.setHours(0, 0, 0, 0);
-            
-            // Jeudi de cette semaine
-            d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
-            
-            // 4 janvier est toujours dans la semaine 1
-            const week1 = new Date(d.getFullYear(), 0, 4);
-            
-            // Calculer le nombre de semaines
-            return 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
         }
 
         function getCurrentWeekInfo() {
@@ -2775,9 +2778,6 @@
                 dropdown.classList.remove('show');
             }
         });
-    </script>
-</body>
-</html>
     </script>
 </body>
 </html>
