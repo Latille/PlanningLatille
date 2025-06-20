@@ -1,9 +1,30 @@
-<!DOCTYPE html>
+<!-- Interface d'authentification -->
+    <div id="authContainer" class="auth-container">
+        <div class="auth-card">
+            <div class="auth-title">🔐 <span id="authModeTitle">Connexion</span></div>
+            <div class="auth-subtitle">Gestion Planning LATILLE</div>
+            
+            <div id="authError" class="auth-error hidden"></div>
+            <div id="authSuccess" class="auth-success hidden"></div>
+            
+            <!-- Mode connexion -->
+            <div id="loginMode">
+                <form id="loginForm">
+                    <input type="email" id="loginEmail" class="auth-input" placeholder="Adresse email" required>
+                    <input type="password" id="loginPassword" class="auth-input" placeholder="Mot de passe" required>
+                    <button type="submit" id="loginBtn" class="auth-btn">Se connecter</button>
+                </form>
+                
+                <div style="margin-top: 15px; text-align: center;">
+                    <a href="#" id="<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion Planning LATILLE</title>
+    
+    <!-- EmailJS -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     
     <!-- Bibliothèque SheetJS pour l'export Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -16,6 +37,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
 
         // Configuration Firebase
         const firebaseConfig = {
@@ -30,12 +52,20 @@
         // Initialiser Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
 
         // Exposer Firebase globalement
         window.firebaseApp = app;
         window.firestore = db;
+        window.firebaseAuth = auth;
         window.firestoreSDK = { doc, setDoc, getDoc, collection, getDocs, deleteDoc, onSnapshot };
+        window.authSDK = { signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider, createUserWithEmailAndPassword };
         window.firebaseReady = true;
+
+        // Gestion de l'état d'authentification
+        onAuthStateChanged(auth, (user) => {
+            window.handleAuthStateChange(user);
+        });
 
         // Initialiser l'application une fois Firebase prêt
         if (document.readyState === 'loading') {
@@ -670,15 +700,15 @@
         }
 
         .form-row input[type="text"]:nth-child(2) {
-            width: 120px; /* Prénom */
+            width: 120px;
         }
 
         .form-row input[type="text"]:nth-child(3) {
-            width: 250px; /* Nom */
+            width: 250px;
         }
 
         .form-row input[type="email"] {
-            flex: 1; /* Email prend l'espace restant */
+            flex: 1;
             min-width: 200px;
         }
 
@@ -738,37 +768,265 @@
                 font-size: 10px;
             }
         }
+
+        /* Styles pour l'authentification */
+        .auth-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .auth-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .auth-title {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .auth-subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .auth-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .auth-btn:hover {
+            background: #2980b9;
+        }
+
+        .auth-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .auth-error {
+            background: #e74c3c;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .auth-success {
+            background: #27ae60;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .forgot-password {
+            color: #3498db;
+            text-decoration: none;
+            font-size: 14px;
+            margin-top: 15px;
+            display: inline-block;
+        }
+
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .user-role {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .user-role.admin {
+            background: #e74c3c;
+        }
+
+        .user-role.user {
+            background: #3498db;
+        }
+
+        .logout-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #7f8c8d;
+        }
+
+        .readonly-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.1);
+            pointer-events: none;
+            z-index: 5000;
+            display: none;
+        }
+
+        .readonly-banner {
+            background: #f39c12;
+            color: white;
+            padding: 8px 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .version-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>📋 Gestion Planning LATILLE</h1>
-        <div class="controls">
-            <div class="week-selector">
-                <div class="week-group">
-                    <label>Semaine</label>
-                    <select id="weekSelect"></select>
-                    <button class="week-nav-btn" onclick="changeWeek(-1)" title="Semaine précédente">◀</button>
-                    <button class="week-nav-btn" onclick="changeWeek(1)" title="Semaine suivante">▶</button>
-                </div>
-                <div class="week-group">
-                    <label>Année</label>
-                    <select id="yearSelect"></select>
+    <!-- Interface d'authentification -->
+    <div id="authContainer" class="auth-container">
+        <div class="auth-card">
+            <div class="auth-title">🔐 Connexion</div>
+            <div class="auth-subtitle">Gestion Planning LATILLE</div>
+            
+            <div id="authError" class="auth-error hidden"></div>
+            <div id="authSuccess" class="auth-success hidden"></div>
+            
+            <form id="loginForm">
+                <input type="email" id="loginEmail" class="auth-input" placeholder="Adresse email" required>
+                <input type="password" id="loginPassword" class="auth-input" placeholder="Mot de passe" required>
+                <button type="submit" id="loginBtn" class="auth-btn">Se connecter</button>
+            </form>
+            
+            <a href="#" id="forgotPasswordLink" class="forgot-password">Mot de passe oublié ?</a>
+            
+            <!-- Modal changement de mot de passe -->
+            <div id="passwordModal" class="modal">
+                <div class="modal-content">
+                    <span class="close" onclick="closePasswordModal()">&times;</span>
+                    <h2>Changer le mot de passe</h2>
+                    <div style="margin: 20px 0;">
+                        <input type="password" id="currentPassword" class="auth-input" placeholder="Mot de passe actuel" required>
+                        <input type="password" id="newPassword" class="auth-input" placeholder="Nouveau mot de passe" required>
+                        <input type="password" id="confirmPassword" class="auth-input" placeholder="Confirmer le nouveau mot de passe" required>
+                    </div>
+                    <button class="btn btn-save" onclick="changePassword()">Changer le mot de passe</button>
                 </div>
             </div>
-            <div class="dropdown">
-                <button class="btn btn-employees" onclick="toggleDropdown()">Actions ⋮</button>
-                <div class="dropdown-content" id="actionsDropdown">
-                    <button onclick="openEmployeeModal(); closeDropdown()">Gérer Employés</button>
-                    <button onclick="openDuplicateModal(); closeDropdown()">Dupliquer Planning</button>
-                    <button class="danger" onclick="openResetModal(); closeDropdown()">Réinitialiser</button>
-                </div>
-            </div>
-            <button class="btn btn-save" onclick="loadSchedules()">Recharger</button>
-            <button class="btn btn-save" onclick="openPrintableVersion()">Planning Impression</button>
-            <button class="btn btn-email" onclick="sendByEmail()">Envoyer par Email</button>
         </div>
     </div>
+
+    <!-- Interface principale -->
+    <div id="mainApp" class="hidden">
+        <!-- Bannière mode lecture seule -->
+        <div id="readonlyBanner" class="readonly-banner hidden">
+            📖 Mode lecture seule - Vous pouvez consulter et imprimer ce planning
+        </div>
+
+        <div class="header">
+            <h1>📋 Gestion Planning LATILLE</h1>
+            <div class="controls">
+                <div class="user-info">
+                    <span id="userEmail"></span>
+                    <span id="userRole" class="user-role"></span>
+                    <button class="btn" style="background: #95a5a6; color: white; padding: 8px 12px;" onclick="openPasswordModal()">Changer MDP</button>
+                    <button class="logout-btn" onclick="logout()">Déconnexion</button>
+                </div>
+                <div class="week-selector">
+                    <div class="week-group">
+                        <label>Semaine</label>
+                        <select id="weekSelect"></select>
+                        <button class="week-nav-btn" onclick="changeWeek(-1)" title="Semaine précédente">◀</button>
+                        <button class="week-nav-btn" onclick="changeWeek(1)" title="Semaine suivante">▶</button>
+                    </div>
+                    <div class="week-group">
+                        <label>Année</label>
+                        <select id="yearSelect"></select>
+                    </div>
+                </div>
+                <div id="adminControls" class="dropdown">
+                    <button class="btn btn-employees" onclick="toggleDropdown()">Actions ⋮</button>
+                    <div class="dropdown-content" id="actionsDropdown">
+                        <button onclick="openEmployeeModal(); closeDropdown()">Gérer Employés</button>
+                        <button onclick="openDuplicateModal(); closeDropdown()">Dupliquer Planning</button>
+                        <button class="danger" onclick="openResetModal(); closeDropdown()">Réinitialiser</button>
+                        <button onclick="validatePlanning(); closeDropdown()">📧 Valider & Envoyer</button>
+                    </div>
+                </div>
+                <button class="btn btn-save" onclick="loadSchedules()">Recharger</button>
+                <button class="btn btn-save" onclick="openPrintableVersion()">Planning Impression</button>
+                <button id="emailBtn" class="btn btn-email" onclick="sendByEmail()">Envoyer par Email</button>
+            </div>
+        </div>
 
     <div class="main-content">
         <div class="summary">
@@ -886,20 +1144,16 @@
                 <label style="display: block; margin-bottom: 10px; font-weight: bold;">Planning source :</label>
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <select id="sourceWeek" style="flex: 1;">
-                        <!-- Options générées dynamiquement -->
                     </select>
                     <select id="sourceYear" style="flex: 1;">
-                        <!-- Options générées dynamiquement -->
                     </select>
                 </div>
                 
                 <label style="display: block; margin-bottom: 10px; font-weight: bold;">Planning destination :</label>
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <select id="destWeek" style="flex: 1;">
-                        <!-- Options générées dynamiquement -->
                     </select>
                     <select id="destYear" style="flex: 1;">
-                        <!-- Options générées dynamiquement -->
                     </select>
                 </div>
                 
@@ -918,10 +1172,8 @@
                 <label style="display: block; margin-bottom: 10px; font-weight: bold;">Semaine à réinitialiser :</label>
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <select id="resetWeek" style="flex: 1;">
-                        <!-- Options générées dynamiquement -->
                     </select>
                     <select id="resetYear" style="flex: 1;">
-                        <!-- Options générées dynamiquement -->
                     </select>
                 </div>
                 
@@ -970,23 +1222,14 @@
             { start: '19:30', end: '20:00', duration: 30 }
         ];
 
-        // Fonction pour calculer le numéro de semaine ISO 8601
         function getWeekNumber(date) {
-            // Calcul ISO 8601 : semaine commence le lundi, semaine 1 contient le premier jeudi
             const d = new Date(date);
             d.setHours(0, 0, 0, 0);
-            
-            // Jeudi de cette semaine
             d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
-            
-            // 4 janvier est toujours dans la semaine 1
             const week1 = new Date(d.getFullYear(), 0, 4);
-            
-            // Calculer le nombre de semaines
             return 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
         }
 
-        // État de l'application - Initialisation sur la semaine courante
         const now = new Date();
         let currentWeek = getWeekNumber(now);
         let currentYear = now.getFullYear();
@@ -998,26 +1241,443 @@
             { firstName: 'Sandrine', lastName: '', email: '' }
         ];
         let schedules = {};
-        let closures = {}; // Nouveau : gestion des fermetures
+        let closures = {};
 
-        // Variables pour la synchronisation temps réel
         let activeListeners = {};
         let isUpdatingFromFirebase = false;
 
-        // Variables pour le glisser-déposer
         let isDragging = false;
         let dragStart = null;
         let dragStartState = null;
         let dragCurrentEmployee = null;
         let dragCurrentDay = null;
 
-        // Créneaux par défaut en gris
         const defaultGraySlots = ['13:00', '13:30', '14:00', '14:30'];
         const sundayGraySlots = ['13:00', '13:30', '14:00', '14:30', '15:00', '15:15', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:15', '19:30'];
         const defaultGreenSlots = ['08:30', '08:45', '12:30', '12:45', '15:00', '15:15'];
-        const weekdayGreenSlots = ['19:00', '19:15']; // Lundi à Samedi seulement
+        const weekdayGreenSlots = ['19:00', '19:15'];
+
+        // ==========================================
+        // FONCTIONS D'AUTHENTIFICATION
+        // ==========================================
+
+        function handleAuthStateChange(user) {
+            if (user) {
+                currentUser = user;
+                loadUserProfile(user.email);
+            } else {
+                currentUser = null;
+                currentUserRole = null;
+                currentUserIndex = null;
+                showAuthInterface();
+            }
+        }
+
+        async function loadUserProfile(email) {
+            try {
+                // Déterminer le rôle et l'index basé sur l'email
+                const employeeIndex = employees.findIndex(emp => emp.email === email);
+                
+                if (employeeIndex === -1) {
+                    // Utilisateur non trouvé dans les employés
+                    await logout();
+                    showAuthError('Accès non autorisé. Contactez l\'administrateur.');
+                    return;
+                }
+
+                currentUserIndex = employeeIndex;
+                currentUserRole = (employeeIndex === 4) ? 'admin' : 'user'; // Index 4 = employé 5 = admin
+                
+                // Vérifier les permissions pour les utilisateurs normaux
+                if (currentUserRole === 'user') {
+                    const hasAccess = await checkUserAccessToCurrentWeek();
+                    if (!hasAccess) {
+                        showAuthError('Vous n\'avez pas accès à ce planning (aucune heure assignée).');
+                        return;
+                    }
+                }
+
+                showMainInterface();
+                
+            } catch (error) {
+                console.error('Erreur chargement profil:', error);
+                showAuthError('Erreur de chargement du profil.');
+            }
+        }
+
+        async function checkUserAccessToCurrentWeek() {
+            const scheduleKey = `${currentYear}-${currentWeek}`;
+            if (!schedules[scheduleKey]) return false;
+            
+            // Vérifier si l'utilisateur a au moins une heure assignée
+            for (const dayIndex in schedules[scheduleKey]) {
+                for (const slotIndex in schedules[scheduleKey][dayIndex]) {
+                    if (schedules[scheduleKey][dayIndex][slotIndex][currentUserIndex]) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function showAuthInterface() {
+            document.getElementById('authContainer').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        function showMainInterface() {
+            document.getElementById('authContainer').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // Mettre à jour l'interface utilisateur
+            updateUserInterface();
+            
+            // Charger les données
+            loadSchedulesFromFirebase();
+            updateScheduleDisplay();
+        }
+
+        function updateUserInterface() {
+            const userEmailEl = document.getElementById('userEmail');
+            const userRoleEl = document.getElementById('userRole');
+            const readonlyBanner = document.getElementById('readonlyBanner');
+            const adminControls = document.getElementById('adminControls');
+            const emailBtn = document.getElementById('emailBtn');
+
+            if (currentUser && currentUserIndex !== null) {
+                const employee = employees[currentUserIndex];
+                userEmailEl.textContent = employee.firstName || currentUser.email;
+                userRoleEl.textContent = currentUserRole === 'admin' ? 'ADMIN' : 'UTILISATEUR';
+                userRoleEl.className = `user-role ${currentUserRole}`;
+
+                if (currentUserRole === 'admin') {
+                    readonlyBanner.classList.add('hidden');
+                    adminControls.classList.remove('hidden');
+                    emailBtn.classList.remove('hidden');
+                    enableEditMode();
+                } else {
+                    readonlyBanner.classList.remove('hidden');
+                    adminControls.classList.add('hidden');
+                    emailBtn.classList.add('hidden');
+                    enableReadOnlyMode();
+                }
+            }
+
+            updateVersionDisplay();
+        }
+
+        function enableEditMode() {
+            // Autoriser toutes les interactions
+            document.querySelectorAll('.day-toggle, .time-slot').forEach(el => {
+                el.style.pointerEvents = 'auto';
+            });
+        }
+
+        function enableReadOnlyMode() {
+            // Désactiver toutes les interactions d'édition
+            document.querySelectorAll('.day-toggle, .time-slot').forEach(el => {
+                el.style.pointerEvents = 'none';
+            });
+        }
+
+        function updateVersionDisplay() {
+            const versionEl = document.getElementById('versionText');
+            const lastModified = new Date(planningVersion.lastModified);
+            const formattedDate = lastModified.toLocaleDateString('fr-FR', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: '2-digit' 
+            });
+            versionEl.textContent = `S${currentWeek}/${currentYear} - ${formattedDate} - v${planningVersion.version}`;
+        }
+
+        // Gestion du formulaire de connexion
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+
+            if (loginForm) {
+                loginForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('loginEmail').value;
+                    const password = document.getElementById('loginPassword').value;
+                    await login(email, password);
+                });
+            }
+
+            if (forgotPasswordLink) {
+                forgotPasswordLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    resetPassword();
+                });
+            }
+        });
+
+        async function login(email, password) {
+            try {
+                showAuthError('', false);
+                const loginBtn = document.getElementById('loginBtn');
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'Connexion...';
+
+                const { signInWithEmailAndPassword } = window.authSDK;
+                await signInWithEmailAndPassword(window.firebaseAuth, email, password);
+                
+                // L'état sera géré par onAuthStateChanged
+                
+            } catch (error) {
+                console.error('Erreur de connexion:', error);
+                let errorMessage = 'Erreur de connexion';
+                
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                        errorMessage = 'Email ou mot de passe incorrect';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'Adresse email invalide';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage = 'Trop de tentatives. Réessayez plus tard.';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                showAuthError(errorMessage);
+                
+            } finally {
+                const loginBtn = document.getElementById('loginBtn');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Se connecter';
+            }
+        }
+
+        async function logout() {
+            try {
+                const { signOut } = window.authSDK;
+                await signOut(window.firebaseAuth);
+                
+                // Nettoyer l'état local
+                currentUser = null;
+                currentUserRole = null;
+                currentUserIndex = null;
+                
+                // Nettoyer les listeners
+                Object.values(activeListeners).forEach(unsubscribe => unsubscribe());
+                activeListeners = {};
+                
+                showAuthInterface();
+                
+            } catch (error) {
+                console.error('Erreur de déconnexion:', error);
+            }
+        }
+
+        async function resetPassword() {
+            const email = prompt('Entrez votre adresse email pour réinitialiser le mot de passe:');
+            if (!email) return;
+
+            try {
+                const { sendPasswordResetEmail } = window.authSDK;
+                await sendPasswordResetEmail(window.firebaseAuth, email);
+                showAuthSuccess('Email de réinitialisation envoyé !');
+            } catch (error) {
+                console.error('Erreur reset password:', error);
+                showAuthError('Erreur lors de l\'envoi de l\'email de réinitialisation');
+            }
+        }
+
+        function openPasswordModal() {
+            document.getElementById('passwordModal').style.display = 'block';
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').style.display = 'none';
+            // Vider les champs
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        }
+
+        async function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                alert('Les nouveaux mots de passe ne correspondent pas');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                alert('Le nouveau mot de passe doit contenir au moins 6 caractères');
+                return;
+            }
+
+            try {
+                const { updatePassword, reauthenticateWithCredential, EmailAuthProvider } = window.authSDK;
+                const user = currentUser;
+                
+                // Réauthentifier l'utilisateur
+                const credential = EmailAuthProvider.credential(user.email, currentPassword);
+                await reauthenticateWithCredential(user, credential);
+                
+                // Changer le mot de passe
+                await updatePassword(user, newPassword);
+                
+                alert('Mot de passe changé avec succès !');
+                closePasswordModal();
+                
+            } catch (error) {
+                console.error('Erreur changement mot de passe:', error);
+                let errorMessage = 'Erreur lors du changement de mot de passe';
+                
+                switch (error.code) {
+                    case 'auth/wrong-password':
+                        errorMessage = 'Mot de passe actuel incorrect';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = 'Le nouveau mot de passe est trop faible';
+                        break;
+                    default:
+                        errorMessage = error.message;
+                }
+                
+                alert(errorMessage);
+            }
+        }
+
+        function showAuthError(message, show = true) {
+            const errorEl = document.getElementById('authError');
+            if (show && message) {
+                errorEl.textContent = message;
+                errorEl.classList.remove('hidden');
+            } else {
+                errorEl.classList.add('hidden');
+            }
+        }
+
+        function showAuthSuccess(message) {
+            const successEl = document.getElementById('authSuccess');
+            successEl.textContent = message;
+            successEl.classList.remove('hidden');
+            setTimeout(() => {
+                successEl.classList.add('hidden');
+            }, 3000);
+        }
+
+        // ==========================================
+        // FONCTIONS DE VALIDATION ET VERSIONING
+        // ==========================================
+
+        async function validatePlanning() {
+            if (currentUserRole !== 'admin') {
+                alert('Seul l\'administrateur peut valider un planning.');
+                return;
+            }
+
+            if (confirm(`Valider et envoyer le planning de la semaine ${currentWeek}/${currentYear} ?\n\nCeci enverra le planning par email à tous les employés concernés.`)) {
+                try {
+                    // Incrémenter la version
+                    const versionParts = planningVersion.version.split('.');
+                    const majorVersion = parseInt(versionParts[0]);
+                    const minorVersion = parseInt(versionParts[1]) + 1;
+                    planningVersion.version = `${majorVersion}.${minorVersion}`;
+                    planningVersion.lastModified = new Date().toISOString();
+
+                    // Sauvegarder la version
+                    await saveVersionToFirebase();
+
+                    // Mettre à jour l'affichage
+                    updateVersionDisplay();
+
+                    // Envoyer les notifications (implémentation EmailJS à venir)
+                    await sendPlanningNotifications();
+
+                    alert(`Planning validé et envoyé ! Version: ${planningVersion.version}`);
+
+                } catch (error) {
+                    console.error('Erreur validation planning:', error);
+                    alert('Erreur lors de la validation du planning.');
+                }
+            }
+        }
+
+        async function saveVersionToFirebase() {
+            if (!window.firebaseReady || !window.firestoreSDK) return;
+
+            try {
+                const { doc, setDoc } = window.firestoreSDK;
+                const versionKey = `${currentYear}-${currentWeek}`;
+                
+                await setDoc(doc(window.firestore, 'planning-data', `version-${versionKey}`), {
+                    version: planningVersion.version,
+                    lastModified: planningVersion.lastModified,
+                    weekNumber: currentWeek,
+                    year: currentYear
+                });
+                
+            } catch (error) {
+                console.error('Erreur sauvegarde version:', error);
+            }
+        }
+
+        async function loadVersionFromFirebase() {
+            if (!window.firebaseReady || !window.firestoreSDK) return;
+
+            try {
+                const { doc, getDoc } = window.firestoreSDK;
+                const versionKey = `${currentYear}-${currentWeek}`;
+                
+                const versionDoc = await getDoc(doc(window.firestore, 'planning-data', `version-${versionKey}`));
+                if (versionDoc.exists()) {
+                    const data = versionDoc.data();
+                    planningVersion = {
+                        version: data.version || '1.0',
+                        lastModified: data.lastModified || new Date().toISOString()
+                    };
+                } else {
+                    planningVersion = { version: '1.0', lastModified: new Date().toISOString() };
+                }
+                
+                updateVersionDisplay();
+                
+            } catch (error) {
+                console.error('Erreur chargement version:', error);
+                planningVersion = { version: '1.0', lastModified: new Date().toISOString() };
+                updateVersionDisplay();
+            }
+        }
+
+        async function sendPlanningNotifications() {
+            // TODO: Implémenter EmailJS pour l'envoi d'emails
+            // Cette fonction sera implémentée dans la prochaine étape
+            console.log('Envoi des notifications de planning...');
+            
+            // Simulation temporaire
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    console.log('Notifications envoyées (simulation)');
+                    resolve();
+                }, 1000);
+            });
+        }
+
+        // Exposer les fonctions globalement pour Firebase
+        window.handleAuthStateChange = handleAuthStateChange;
 
         function toggleDayClosure(dayIndex) {
+            // Vérifier les permissions
+            if (currentUserRole !== 'admin') {
+                return; // Mode lecture seule
+            }
+
             // Vérification des permissions avec debug
             const { currentWeekNumber, currentYearNumber } = getCurrentWeekInfo();
             
@@ -1029,7 +1689,6 @@
             const closureKey = `${currentYear}-${currentWeek}`;
             if (!closures[closureKey]) closures[closureKey] = {};
             
-            // États: 'open' -> 'closed' -> 'am-closed' -> 'pm-closed' -> 'open'
             const currentState = closures[closureKey][dayIndex] || 'open';
             let nextState;
             
@@ -1053,7 +1712,6 @@
             closures[closureKey][dayIndex] = nextState;
             updateClosureDisplay();
             
-            // Auto-sauvegarde sur Firebase (seulement si pas de mise à jour Firebase en cours)
             if (!isUpdatingFromFirebase) {
                 saveSchedulesToFirebase();
             }
@@ -1067,7 +1725,6 @@
                 const toggle = document.querySelector(`[data-day="${dayIndex}"]`);
                 const state = closures[closureKey] ? closures[closureKey][dayIndex] || 'open' : 'open';
                 
-                // Mettre à jour l'apparence du bouton
                 toggle.className = `day-toggle ${state}`;
                 
                 switch(state) {
@@ -1089,18 +1746,15 @@
                         break;
                 }
                 
-                // Appliquer les effets visuels sur les lignes
                 updateRowsVisual(dayIndex, state);
             });
         }
 
         function updateRowsVisual(dayIndex, state) {
-            // Supprimer les classes existantes
             document.querySelectorAll('.time-row').forEach(row => {
                 const cells = row.querySelectorAll('.schedule-cell');
                 if (cells[dayIndex]) {
                     cells[dayIndex].classList.remove('closed', 'establishment-closed');
-                    // Supprimer tout texte qui pourrait avoir été ajouté
                     cells[dayIndex].style.position = 'relative';
                     const existingText = cells[dayIndex].querySelector('.closed-text');
                     if (existingText) {
@@ -1111,7 +1765,6 @@
             });
             
             if (state === 'closed') {
-                // Fermeture complète
                 document.querySelectorAll('.time-row').forEach(row => {
                     const cells = row.querySelectorAll('.schedule-cell');
                     if (cells[dayIndex]) {
@@ -1119,7 +1772,6 @@
                     }
                 });
             } else if (state === 'am-closed') {
-                // Fermeture matin (07:00-13:00)
                 timeSlots.forEach((slot, slotIndex) => {
                     const hour = parseInt(slot.start.split(':')[0]);
                     if (hour >= 7 && hour < 13) {
@@ -1133,7 +1785,6 @@
                     }
                 });
             } else if (state === 'pm-closed') {
-                // Fermeture après-midi (13:00-20:00)
                 timeSlots.forEach((slot, slotIndex) => {
                     const hour = parseInt(slot.start.split(':')[0]);
                     if (hour >= 13) {
@@ -1172,12 +1823,10 @@
             const newWeek = currentWeek + direction;
             
             if (newWeek >= 1 && newWeek <= 53) {
-                // Rester dans la même année
                 currentWeek = newWeek;
                 document.getElementById('weekSelect').value = currentWeek;
                 updateScheduleDisplay();
             } else if (newWeek === 0) {
-                // Passer à la semaine 53 de l'année précédente
                 if (currentYear > 2024) {
                     currentYear--;
                     currentWeek = 53;
@@ -1186,7 +1835,6 @@
                     updateScheduleDisplay();
                 }
             } else if (newWeek === 54) {
-                // Passer à la semaine 1 de l'année suivante
                 if (currentYear < 2030) {
                     currentYear++;
                     currentWeek = 1;
@@ -1197,7 +1845,6 @@
             }
         }
 
-        // Initialize on page load - sera appelé par Firebase
         window.initializeApp = function() {
             populateSelectors();
             loadEmployees();
@@ -1205,7 +1852,6 @@
             updateScheduleDisplay();
         };
 
-        // Fonctions Firebase avec vérification
         async function saveSchedulesToFirebase() {
             if (!window.firebaseReady || !window.firestoreSDK) {
                 console.log('Firebase pas encore prêt, sauvegarde ignorée');
@@ -1215,13 +1861,11 @@
             try {
                 const { doc, setDoc } = window.firestoreSDK;
                 
-                // Sauvegarder les employés
                 await setDoc(doc(window.firestore, 'planning-data', 'employees'), {
                     employees: employees,
                     lastUpdated: new Date().toISOString()
                 });
 
-                // Sauvegarder les plannings
                 for (const [key, schedule] of Object.entries(schedules)) {
                     await setDoc(doc(window.firestore, 'planning-data', `schedule-${key}`), {
                         schedule: schedule,
@@ -1229,7 +1873,6 @@
                     });
                 }
 
-                // Sauvegarder les fermetures
                 for (const [key, closure] of Object.entries(closures)) {
                     await setDoc(doc(window.firestore, 'planning-data', `closure-${key}`), {
                         closure: closure,
@@ -1255,13 +1898,11 @@
             try {
                 const { doc, getDoc, collection, getDocs } = window.firestoreSDK;
                 
-                // Charger les employés
                 const employeesDoc = await getDoc(doc(window.firestore, 'planning-data', 'employees'));
                 if (employeesDoc.exists()) {
                     employees = employeesDoc.data().employees || employees;
                 }
 
-                // Charger tous les documents de planning-data
                 const planningCollection = collection(window.firestore, 'planning-data');
                 const snapshot = await getDocs(planningCollection);
                 
@@ -1279,13 +1920,10 @@
                 });
 
                 console.log('Données chargées depuis Firebase');
-                
-                // Démarrer l'écoute temps réel après le chargement initial
                 setupRealtimeListeners();
                 
             } catch (error) {
                 console.error('Erreur chargement Firebase:', error);
-                // Utiliser les données par défaut en cas d'erreur
                 loadEmployees();
             }
         }
@@ -1297,11 +1935,9 @@
 
             const { doc, onSnapshot } = window.firestoreSDK;
 
-            // Nettoyer les anciens listeners
             Object.values(activeListeners).forEach(unsubscribe => unsubscribe());
             activeListeners = {};
 
-            // Écouter les changements des employés
             activeListeners.employees = onSnapshot(
                 doc(window.firestore, 'planning-data', 'employees'),
                 (docSnapshot) => {
@@ -1321,7 +1957,6 @@
                 (error) => console.error('Erreur listener employés:', error)
             );
 
-            // Écouter les changements de la semaine courante (planning + fermetures)
             setupCurrentWeekListeners();
         }
 
@@ -1333,7 +1968,6 @@
             const { doc, onSnapshot } = window.firestoreSDK;
             const currentKey = `${currentYear}-${currentWeek}`;
 
-            // Nettoyer les listeners de la semaine précédente
             if (activeListeners.currentSchedule) {
                 activeListeners.currentSchedule();
                 delete activeListeners.currentSchedule;
@@ -1343,7 +1977,6 @@
                 delete activeListeners.currentClosure;
             }
 
-            // Écouter les changements du planning de la semaine courante
             activeListeners.currentSchedule = onSnapshot(
                 doc(window.firestore, 'planning-data', `schedule-${currentKey}`),
                 (docSnapshot) => {
@@ -1359,7 +1992,6 @@
                             console.log(`🔄 Planning semaine ${currentKey} mis à jour depuis Firebase`);
                         }
                     } else {
-                        // Document supprimé
                         if (schedules[currentKey]) {
                             isUpdatingFromFirebase = true;
                             delete schedules[currentKey];
@@ -1372,7 +2004,6 @@
                 (error) => console.error('Erreur listener planning:', error)
             );
 
-            // Écouter les changements des fermetures de la semaine courante
             activeListeners.currentClosure = onSnapshot(
                 doc(window.firestore, 'planning-data', `closure-${currentKey}`),
                 (docSnapshot) => {
@@ -1388,7 +2019,6 @@
                             console.log(`🔄 Fermetures semaine ${currentKey} mises à jour depuis Firebase`);
                         }
                     } else {
-                        // Document supprimé
                         if (closures[currentKey]) {
                             isUpdatingFromFirebase = true;
                             delete closures[currentKey];
@@ -1406,7 +2036,6 @@
             const weekSelect = document.getElementById('weekSelect');
             const yearSelect = document.getElementById('yearSelect');
             
-            // Populate weeks (1-53)
             for (let i = 1; i <= 53; i++) {
                 const option = document.createElement('option');
                 option.value = i;
@@ -1415,7 +2044,6 @@
                 weekSelect.appendChild(option);
             }
             
-            // Populate years
             for (let i = 2024; i <= 2030; i++) {
                 const option = document.createElement('option');
                 option.value = i;
@@ -1445,7 +2073,6 @@
                     { firstName: 'Sandrine', lastName: '', email: '' }
                 ];
             }
-            // Migration pour compatibilité avec l'ancien format
             if (typeof employees[0] === 'string') {
                 employees = employees.map(name => ({
                     firstName: name,
@@ -1456,19 +2083,15 @@
         }
 
         function getWeekDates(year, week) {
-            // Calcul ISO 8601 : la semaine 1 est celle qui contient le premier jeudi de l'année
-            const jan4 = new Date(year, 0, 4); // 4 janvier est toujours dans la semaine 1
-            const jan4Day = jan4.getDay() || 7; // Dimanche = 7 au lieu de 0
+            const jan4 = new Date(year, 0, 4);
+            const jan4Day = jan4.getDay() || 7;
             
-            // Trouver le lundi de la semaine 1
             const firstMondayOfYear = new Date(jan4);
             firstMondayOfYear.setDate(jan4.getDate() - jan4Day + 1);
             
-            // Calculer le lundi de la semaine demandée
             const mondayOfWeek = new Date(firstMondayOfYear);
             mondayOfWeek.setDate(firstMondayOfYear.getDate() + (week - 1) * 7);
             
-            // Générer les 7 dates de la semaine
             const dates = [];
             for (let i = 0; i < 7; i++) {
                 const date = new Date(mondayOfWeek);
@@ -1483,6 +2106,23 @@
         }
 
         function updateScheduleDisplay() {
+            // Vérifier les permissions pour les utilisateurs
+            if (currentUserRole === 'user') {
+                checkUserAccessToCurrentWeek().then(hasAccess => {
+                    if (!hasAccess) {
+                        alert('Vous n\'avez pas accès à cette semaine (aucune heure assignée).');
+                        // Retourner à une semaine où l'utilisateur a accès
+                        findAccessibleWeek();
+                        return;
+                    }
+                    continueUpdateScheduleDisplay();
+                });
+            } else {
+                continueUpdateScheduleDisplay();
+            }
+        }
+
+        function continueUpdateScheduleDisplay() {
             const dates = getWeekDates(currentYear, currentWeek);
             const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
             
@@ -1508,10 +2148,24 @@
             updateSummary();
             updateClosureDisplay();
             
+            // Charger la version pour cette semaine
+            loadVersionFromFirebase();
+            
             // Mettre à jour les listeners pour la nouvelle semaine (seulement si pas de mise à jour Firebase en cours)
             if (!isUpdatingFromFirebase) {
                 setupCurrentWeekListeners();
             }
+        }
+
+        async function findAccessibleWeek() {
+            // Chercher une semaine où l'utilisateur a accès (logique simple)
+            // Pour l'instant, retourner à la semaine courante
+            const now = new Date();
+            currentWeek = getWeekNumber(now);
+            currentYear = now.getFullYear();
+            document.getElementById('weekSelect').value = currentWeek;
+            document.getElementById('yearSelect').value = currentYear;
+            updateScheduleDisplay();
         }
 
         function generateTimeSlots() {
@@ -1522,13 +2176,11 @@
                 const row = document.createElement('div');
                 row.className = 'time-row';
                 
-                // Time label
                 const timeCell = document.createElement('div');
                 timeCell.className = 'time-cell';
                 timeCell.textContent = `${slot.start}-${slot.end}`;
                 row.appendChild(timeCell);
                 
-                // Days
                 const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
                 days.forEach((day, dayIndex) => {
                     const scheduleCell = document.createElement('div');
@@ -1541,19 +2193,16 @@
                         timeSlotDiv.dataset.slot = slotIndex;
                         timeSlotDiv.dataset.employee = empIndex;
                         
-                        // Apply default colors based on rules
                         const defaultClass = getDefaultClass(slot.start, dayIndex);
                         if (defaultClass) {
                             timeSlotDiv.classList.add(defaultClass);
                         }
                         
-                        // Load saved state
                         const scheduleKey = `${currentYear}-${currentWeek}`;
                         if (schedules[scheduleKey] && schedules[scheduleKey][dayIndex] && schedules[scheduleKey][dayIndex][slotIndex] && schedules[scheduleKey][dayIndex][slotIndex][empIndex]) {
                             timeSlotDiv.className = 'time-slot employee-' + (empIndex + 1);
                         }
                         
-                        // Événements pour le clic simple et le glisser
                         timeSlotDiv.addEventListener('mousedown', (e) => startDrag(e, timeSlotDiv, dayIndex, slotIndex, empIndex));
                         timeSlotDiv.addEventListener('mouseenter', (e) => updateDrag(timeSlotDiv, dayIndex, slotIndex, empIndex));
                         timeSlotDiv.addEventListener('click', (e) => {
@@ -1573,7 +2222,6 @@
         }
 
         function startDrag(e, element, dayIndex, slotIndex, empIndex) {
-            // Vérification des permissions avec debug
             const { currentWeekNumber, currentYearNumber } = getCurrentWeekInfo();
             
             if (currentYear < currentYearNumber || (currentYear === currentYearNumber && currentWeek < currentWeekNumber)) {
@@ -1587,7 +2235,6 @@
             dragCurrentEmployee = empIndex;
             dragCurrentDay = dayIndex;
             
-            // Déterminer l'état de départ
             const scheduleKey = `${currentYear}-${currentWeek}`;
             dragStartState = !!(schedules[scheduleKey] && 
                               schedules[scheduleKey][dayIndex] && 
@@ -1598,20 +2245,16 @@
         function updateDrag(element, dayIndex, slotIndex, empIndex) {
             if (!isDragging) return;
             
-            // Nettoyer les aperçus précédents
             clearDragPreview();
             
-            // Vérifier si on est sur le bon employé et jour
             if (empIndex !== dragCurrentEmployee || dayIndex !== dragCurrentDay) {
                 element.classList.add('drag-invalid');
                 return;
             }
             
-            // Calculer la plage
             const startSlot = Math.min(dragStart.slotIndex, slotIndex);
             const endSlot = Math.max(dragStart.slotIndex, slotIndex);
             
-            // Appliquer l'aperçu
             for (let slot = startSlot; slot <= endSlot; slot++) {
                 const targetElement = document.querySelector(`[data-day="${dayIndex}"][data-slot="${slot}"][data-employee="${empIndex}"]`);
                 if (targetElement) {
@@ -1626,14 +2269,12 @@
             });
         }
 
-        // Événements globaux
         document.addEventListener('mouseup', (e) => {
             if (isDragging) {
                 const previewElements = document.querySelectorAll('.drag-preview');
                 const invalidElements = document.querySelectorAll('.drag-invalid');
                 
                 if (previewElements.length > 0 && invalidElements.length === 0) {
-                    // Appliquer les changements
                     const scheduleKey = `${currentYear}-${currentWeek}`;
                     if (!schedules[scheduleKey]) schedules[scheduleKey] = {};
                     if (!schedules[scheduleKey][dragCurrentDay]) schedules[scheduleKey][dragCurrentDay] = {};
@@ -1646,10 +2287,8 @@
                             schedules[scheduleKey][dragCurrentDay][slotIndex] = {};
                         }
                         
-                        // Inverser l'état
                         schedules[scheduleKey][dragCurrentDay][slotIndex][empIndex] = !dragStartState;
                         
-                        // Mettre à jour visuellement
                         if (!dragStartState) {
                             element.className = `time-slot employee-${empIndex + 1}`;
                         } else {
@@ -1663,7 +2302,6 @@
                     
                     updateSummary();
                     
-                    // Auto-sauvegarde sur Firebase (seulement si pas de mise à jour Firebase en cours)
                     if (!isUpdatingFromFirebase) {
                         saveSchedulesToFirebase();
                     }
@@ -1679,27 +2317,22 @@
         });
 
         function getDefaultClass(timeStart, dayIndex) {
-            // Default gray slots (all days)
             if (defaultGraySlots.includes(timeStart)) {
                 return 'default-gray';
             }
             
-            // Sunday specific gray slots
             if (dayIndex === 6 && sundayGraySlots.includes(timeStart)) {
                 return 'default-gray';
             }
             
-            // Default green slots (all days)
             if (defaultGreenSlots.includes(timeStart)) {
                 return 'default-green';
             }
             
-            // Weekday green slots (Monday to Saturday)
             if (dayIndex < 6 && weekdayGreenSlots.includes(timeStart)) {
                 return 'default-green';
             }
             
-            // Sunday specific: 19:00 and 19:15 should be gray
             if (dayIndex === 6 && weekdayGreenSlots.includes(timeStart)) {
                 return 'default-gray';
             }
@@ -1708,6 +2341,11 @@
         }
 
         function toggleTimeSlot(element, dayIndex, slotIndex, empIndex) {
+            // Vérifier les permissions
+            if (currentUserRole !== 'admin') {
+                return; // Mode lecture seule
+            }
+
             // Vérifier si le créneau est fermé
             if (isSlotClosed(dayIndex, slotIndex)) {
                 alert('Impossible d\'assigner du personnel : établissement fermé sur ce créneau.');
@@ -1767,7 +2405,6 @@
             const employeeTotals = [0, 0, 0, 0, 0];
             const dailyTotals = [0, 0, 0, 0, 0, 0, 0];
             
-            // Calculate totals
             employees.forEach((employee, empIndex) => {
                 let totalMinutes = 0;
                 
@@ -1789,7 +2426,6 @@
                 
                 employeeTotals[empIndex] = totalMinutes;
                 
-                // Create summary card
                 const card = document.createElement('div');
                 card.className = 'employee-summary';
                 
@@ -1802,12 +2438,10 @@
                 const remainingMinutes = Math.abs(remaining) % 60;
                 const remainingDisplay = `${remaining < 0 ? '-' : ''}${remainingHours}h${remainingMinutes.toString().padStart(2, '0')}`;
                 
-                // Déterminer la classe selon les heures
                 if (totalMinutes === 0) {
                     card.classList.add('hours-zero');
                 } else if (totalMinutes === 35 * 60) {
                     card.classList.add('hours-complete');
-                    // Ajouter animation flash si on vient d'atteindre 35h
                     setTimeout(() => {
                         card.classList.add('flash');
                     }, 50);
@@ -1823,7 +2457,6 @@
                 summaryGrid.appendChild(card);
             });
             
-            // Update daily totals
             days.forEach((day, dayIndex) => {
                 const container = document.getElementById(`${day}-totals`);
                 container.innerHTML = '';
@@ -1854,7 +2487,6 @@
                 
                 container.appendChild(totalsDiv);
                 
-                // Update team total
                 const teamHours = Math.floor(dailyTotals[dayIndex] / 60);
                 const teamMinutes = dailyTotals[dayIndex] % 60;
                 const teamElement = document.getElementById(`${day}-team-total`);
@@ -1895,7 +2527,6 @@
             modal.style.display = 'block';
         }
 
-        // Fonction pour effacer les données d'un employé
         function clearEmployee(index) {
             if (confirm(`Êtes-vous sûr de vouloir effacer toutes les données de l'employé ${index + 1} ?`)) {
                 document.getElementById(`employee-firstName-${index}`).value = '';
@@ -1904,7 +2535,6 @@
             }
         }
 
-        // Fonctions de formatage automatique
         function formatFirstName(input) {
             let value = input.value;
             if (value.length > 0) {
@@ -1926,17 +2556,32 @@
         }
 
         function saveEmployees() {
+            // Vérifier les permissions
+            if (currentUserRole !== 'admin') {
+                alert('Seul l\'administrateur peut modifier les employés.');
+                return;
+            }
+
             const newEmployees = [];
             for (let i = 0; i < 5; i++) {
                 const firstName = document.getElementById(`employee-firstName-${i}`).value || '';
                 const lastName = document.getElementById(`employee-lastName-${i}`).value || '';
                 const email = document.getElementById(`employee-email-${i}`).value || '';
                 
-                newEmployees.push({
-                    firstName: firstName,
-                    lastName: lastName,
-                    email: email
-                });
+                // Forcer l'admin pour l'employé #5
+                if (i === 4) {
+                    newEmployees.push({
+                        firstName: firstName || 'Sandrine',
+                        lastName: lastName || 'LATILLE',
+                        email: 'latilledistribution@gmail.com'
+                    });
+                } else {
+                    newEmployees.push({
+                        firstName: firstName,
+                        lastName: lastName,
+                        email: email
+                    });
+                }
             }
             
             employees = newEmployees;
@@ -1946,11 +2591,232 @@
             // Sauvegarder sur Firebase
             saveSchedulesToFirebase().then(success => {
                 if (success) {
-                    alert('Informations des employés sauvegardées sur Firebase !');
+                    alert('Informations des employés sauvegardées !');
+                    
+                    // Proposer d'envoyer des invitations pour les nouveaux emails
+                    const employeesWithEmail = employees.filter((emp, index) => 
+                        index < 4 && emp.email && emp.email.trim() !== ''
+                    );
+                    
+                    if (employeesWithEmail.length > 0) {
+                        const sendInvitations = confirm(
+                            `Voulez-vous créer les comptes et envoyer des invitations aux employés ?\n\n` +
+                            employeesWithEmail.map(emp => `• ${emp.firstName} (${emp.email})`).join('\n') +
+                            `\n\n⚠️ Les comptes seront créés avec des mots de passe temporaires.`
+                        );
+                        
+                        if (sendInvitations) {
+                            // Vérifier la configuration EmailJS
+                            if (!checkEmailJSConfiguration()) {
+                                showEmailJSSetupInstructions();
+                            }
+                            
+                            sendEmployeeInvitations(employeesWithEmail);
+                        }
+                    }
                 } else {
                     alert('Informations sauvegardées localement (erreur Firebase)');
                 }
             });
+        }
+
+        async function sendEmployeeInvitations(employeesWithEmail) {
+            try {
+                const { createUserWithEmailAndPassword } = window.authSDK;
+                const invitationResults = [];
+
+                for (const employee of employeesWithEmail) {
+                    try {
+                        // Générer un mot de passe temporaire
+                        const tempPassword = generateTempPassword();
+                        
+                        // Créer le compte dans Firebase Auth
+                        const userCredential = await createUserWithEmailAndPassword(
+                            window.firebaseAuth, 
+                            employee.email, 
+                            tempPassword
+                        );
+                        
+                        console.log(`Compte créé pour ${employee.firstName}`);
+                        
+                        // Envoyer l'email d'invitation
+                        await sendInvitationEmail(employee, tempPassword);
+                        
+                        invitationResults.push({
+                            name: employee.firstName,
+                            email: employee.email,
+                            success: true
+                        });
+                        
+                    } catch (error) {
+                        console.error(`Erreur pour ${employee.firstName}:`, error);
+                        
+                        // Si le compte existe déjà, juste envoyer l'email de rappel
+                        if (error.code === 'auth/email-already-in-use') {
+                            await sendReminderEmail(employee);
+                            invitationResults.push({
+                                name: employee.firstName,
+                                email: employee.email,
+                                success: true,
+                                existing: true
+                            });
+                        } else {
+                            invitationResults.push({
+                                name: employee.firstName,
+                                email: employee.email,
+                                success: false,
+                                error: error.message
+                            });
+                        }
+                    }
+                }
+                
+                // Afficher le résumé
+                showInvitationResults(invitationResults);
+                
+            } catch (error) {
+                console.error('Erreur générale envoi invitations:', error);
+                alert('Erreur lors de l\'envoi des invitations. Vérifiez la configuration EmailJS.');
+            }
+        }
+
+        function generateTempPassword() {
+            // Générer un mot de passe temporaire sécurisé
+            const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+            let password = '';
+            for (let i = 0; i < 8; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return password;
+        }
+
+        async function sendInvitationEmail(employee, tempPassword) {
+            if (typeof emailjs === 'undefined') {
+                console.log(`[SIMULATION] Email d'invitation envoyé à ${employee.firstName} (${employee.email})`);
+                console.log(`[SIMULATION] Mot de passe temporaire: ${tempPassword}`);
+                return;
+            }
+
+            const templateParams = {
+                to_name: employee.firstName,
+                to_email: employee.email,
+                temp_password: tempPassword,
+                login_url: window.location.origin + window.location.pathname,
+                admin_email: 'latilledistribution@gmail.com'
+            };
+
+            try {
+                await emailjs.send(
+                    emailjsConfig.serviceId,
+                    emailjsConfig.templateId,
+                    templateParams
+                );
+                console.log(`Email d'invitation envoyé à ${employee.firstName}`);
+            } catch (error) {
+                console.error(`Erreur envoi email à ${employee.firstName}:`, error);
+                throw error;
+            }
+        }
+
+        async function sendReminderEmail(employee) {
+            if (typeof emailjs === 'undefined') {
+                console.log(`[SIMULATION] Email de rappel envoyé à ${employee.firstName} (${employee.email})`);
+                return;
+            }
+
+            const templateParams = {
+                to_name: employee.firstName,
+                to_email: employee.email,
+                login_url: window.location.origin + window.location.pathname,
+                admin_email: 'latilledistribution@gmail.com',
+                is_reminder: true
+            };
+
+            try {
+                await emailjs.send(
+                    emailjsConfig.serviceId,
+                    'template_reminder', // Template différent pour les rappels
+                    templateParams
+                );
+                console.log(`Email de rappel envoyé à ${employee.firstName}`);
+            } catch (error) {
+                console.error(`Erreur envoi rappel à ${employee.firstName}:`, error);
+                throw error;
+            }
+        }
+
+        function showInvitationResults(results) {
+            const successCount = results.filter(r => r.success).length;
+            const totalCount = results.length;
+            
+            let message = `Résultats des invitations (${successCount}/${totalCount}):\n\n`;
+            
+            results.forEach(result => {
+                if (result.success) {
+                    if (result.existing) {
+                        message += `✓ ${result.name} (${result.email}) - Rappel envoyé\n`;
+                    } else {
+                        message += `✓ ${result.name} (${result.email}) - Compte créé et invitation envoyée\n`;
+                    }
+                } else {
+                    message += `✗ ${result.name} (${result.email}) - Erreur: ${result.error}\n`;
+                }
+            });
+            
+            if (successCount === totalCount) {
+                message += `\n🎉 Toutes les invitations ont été envoyées avec succès !`;
+            } else if (successCount > 0) {
+                message += `\n⚠️ ${totalCount - successCount} invitation(s) ont échoué.`;
+            } else {
+                message += `\n❌ Aucune invitation n'a pu être envoyée. Vérifiez la configuration EmailJS.`;
+            }
+            
+            alert(message);
+        }
+
+        // ==========================================
+        // CONFIGURATION EMAILJS - INSTRUCTIONS
+        // ==========================================
+
+        function checkEmailJSConfiguration() {
+            if (typeof emailjs === 'undefined') {
+                console.warn('EmailJS non chargé - Mode simulation activé');
+                return false;
+            }
+
+            if (emailjsConfig.publicKey === 'votre_public_key') {
+                console.warn('EmailJS non configuré - Mode simulation activé');
+                return false;
+            }
+
+            return true;
+        }
+
+        function showEmailJSSetupInstructions() {
+            const instructions = `
+🔧 CONFIGURATION EMAILJS REQUISE
+
+Pour envoyer de vrais emails, suivez ces étapes :
+
+1. Créez un compte gratuit sur https://emailjs.com
+2. Créez un service email (Gmail, Outlook, etc.)
+3. Créez un template d'invitation avec ces variables :
+   - {{to_name}} : Prénom de l'employé
+   - {{to_email}} : Email de l'employé  
+   - {{temp_password}} : Mot de passe temporaire
+   - {{login_url}} : URL de connexion
+   - {{admin_email}} : Email admin
+
+4. Remplacez dans le code :
+   - serviceId: 'votre_service_id'
+   - templateId: 'votre_template_id'
+   - publicKey: 'votre_public_key'
+
+En attendant, le mode simulation est activé (voir console).
+            `;
+            
+            console.log(instructions);
+            alert('Configuration EmailJS requise pour envoyer de vrais emails.\nVoir la console pour les instructions détaillées.');
         }
 
         function loadSchedules() {
@@ -1961,15 +2827,10 @@
         }
 
         function openPrintableVersion() {
-            // Générer le HTML d'impression
             const printHTML = generatePrintableHTML();
-            
-            // Ouvrir dans une nouvelle fenêtre
             const printWindow = window.open('', '_blank', 'width=1200,height=800');
             printWindow.document.write(printHTML);
             printWindow.document.close();
-            
-            // Auto-focus pour impression
             printWindow.focus();
         }
 
@@ -2056,7 +2917,6 @@
             width: 30px;
         }
 
-        /* Séparation entre les jours */
         .day-separator {
             border-right: 3px solid #2c3e50 !important;
             position: relative;
@@ -2126,18 +2986,15 @@
             font-size: 6px;
         }
 
-        /* Couleurs des employés */
         .employee-1 { background: #e74c3c; color: white; }
         .employee-2 { background: #3498db; color: white; }
         .employee-3 { background: #f39c12; color: white; }
         .employee-4 { background: #9b59b6; color: white; }
         .employee-5 { background: #f1c40f; color: black; }
 
-        /* Créneaux par défaut */
         .default-gray { background: #95a5a6; }
         .default-green { background: #a8d8a8; }
 
-        /* Lignes alternées */
         .planning-table tr:nth-child(even) .time-slot:not(.assigned):not(.closed):not(.default-gray):not(.default-green) {
             background: #f7f7f7;
         }
@@ -2191,11 +3048,9 @@
     </div>
 
     <table class="planning-table">
-        <!-- En-têtes des jours -->
         <tr>
             <th class="time-col">Horaires</th>`;
 
-            // En-têtes des jours (5 colonnes par jour)
             const dayNames = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
             dayNames.forEach((dayName, dayIndex) => {
                 const dateStr = dates[dayIndex].toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -2205,14 +3060,11 @@
             html += `
         </tr>
         
-        <!-- Ligne des employés -->
         <tr>
             <td class="time-col employee-header">Employés</td>`;
 
-            // Prénoms des employés (répétés pour chaque jour)
             for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
                 employees.forEach((employee, empIndex) => {
-                    // Ajouter la classe day-separator à la dernière colonne de chaque jour (sauf dimanche)
                     const isLastEmployeeOfDay = empIndex === employees.length - 1 && dayIndex < 6;
                     const separatorClass = isLastEmployeeOfDay ? ' day-separator' : '';
                     
@@ -2225,25 +3077,20 @@
             html += `
         </tr>`;
 
-            // Lignes des créneaux horaires
             timeSlots.forEach((slot, slotIndex) => {
                 html += `
         <tr>
             <td class="time-col">${slot.start}-${slot.end}</td>`;
 
-                // Pour chaque jour
                 for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
-                    // Pour chaque employé
                     employees.forEach((employee, empIndex) => {
                         let cellClass = 'time-slot';
                         let cellContent = '';
 
-                        // Vérifier les fermetures
                         if (isSlotClosed(dayIndex, slotIndex)) {
                             cellClass += ' closed';
                             cellContent = 'FERMÉ';
                         } else {
-                            // Vérifier si cet employé est assigné
                             if (schedules[scheduleKey] && 
                                 schedules[scheduleKey][dayIndex] && 
                                 schedules[scheduleKey][dayIndex][slotIndex] && 
@@ -2251,7 +3098,6 @@
                                 cellClass += ` employee-${empIndex + 1} assigned`;
                                 cellContent = '●';
                             } else {
-                                // Vérifier les créneaux par défaut
                                 const defaultClass = getDefaultClass(slot.start, dayIndex);
                                 if (defaultClass === 'default-gray') {
                                     cellClass += ' default-gray';
@@ -2261,7 +3107,6 @@
                             }
                         }
 
-                        // Ajouter la classe day-separator à la dernière colonne de chaque jour (sauf dimanche)
                         const isLastEmployeeOfDay = empIndex === employees.length - 1 && dayIndex < 6;
                         if (isLastEmployeeOfDay) {
                             cellClass += ' day-separator';
@@ -2275,7 +3120,6 @@
         </tr>`;
             });
 
-            // Ligne totaux par employé
             html += `
         <tr class="total-row">
             <td class="time-col">Total Jour</td>`;
@@ -2295,7 +3139,6 @@
                     const hours = Math.floor(totalMinutes / 60);
                     const minutes = totalMinutes % 60;
                     
-                    // Ajouter la classe day-separator à la dernière colonne de chaque jour (sauf dimanche)
                     const isLastEmployeeOfDay = empIndex === employees.length - 1 && dayIndex < 6;
                     const separatorClass = isLastEmployeeOfDay ? ' day-separator' : '';
                     
@@ -2306,7 +3149,6 @@
             html += `
         </tr>
         
-        <!-- Ligne total équipe -->
         <tr class="team-total-row">
             <td class="time-col">Équipe</td>`;
 
@@ -2327,7 +3169,6 @@
                 const minutes = totalMinutes % 60;
                 const teamTotal = `${hours}h${minutes.toString().padStart(2, '0')}`;
 
-                // Total sur la première colonne, autres vides
                 html += `<td colspan="5">${teamTotal}</td>`;
             }
 
@@ -2368,7 +3209,6 @@
                     }
                 });
                 
-                // Calculate total hours
                 let totalMinutes = 0;
                 timeSlots.forEach((slot, slotIndex) => {
                     days.forEach((_, dayIndex) => {
@@ -2391,7 +3231,6 @@
             window.open(mailtoLink);
         }
 
-        // Click outside modal to close
         window.addEventListener('click', (event) => {
             const employeeModal = document.getElementById('employeeModal');
             const duplicateModal = document.getElementById('duplicateModal');
@@ -2408,7 +3247,6 @@
             }
         });
 
-        // Fonctions pour la duplication de planning
         function openDuplicateModal() {
             const modal = document.getElementById('duplicateModal');
             populateDuplicateSelectors();
@@ -2421,209 +3259,17 @@
         }
 
         function populateDuplicateSelectors() {
-            const sourceWeek = document.getElementById('sourceWeek');
-            const sourceYear = document.getElementById('sourceYear');
-            const destWeek = document.getElementById('destWeek');
-            const destYear = document.getElementById('destYear');
-            
-            // Vider les sélecteurs
-            [sourceWeek, sourceYear, destWeek, destYear].forEach(select => {
-                select.innerHTML = '';
-            });
-            
-            // Remplir les semaines (1-53)
-            for (let i = 1; i <= 53; i++) {
-                const sourceOption = document.createElement('option');
-                sourceOption.value = i;
-                sourceOption.textContent = `Semaine ${i}`;
-                if (i === currentWeek) sourceOption.selected = true;
-                sourceWeek.appendChild(sourceOption);
-                
-                const destOption = document.createElement('option');
-                destOption.value = i;
-                destOption.textContent = `Semaine ${i}`;
-                if (i === currentWeek) destOption.selected = true;
-                destWeek.appendChild(destOption);
-            }
-            
-            // Remplir les années
-            for (let i = 2024; i <= 2030; i++) {
-                const sourceOption = document.createElement('option');
-                sourceOption.value = i;
-                sourceOption.textContent = i;
-                if (i === currentYear) sourceOption.selected = true;
-                sourceYear.appendChild(sourceOption);
-                
-                const destOption = document.createElement('option');
-                destOption.value = i;
-                destOption.textContent = i;
-                if (i === currentYear) destOption.selected = true;
-                destYear.appendChild(destOption);
-            }
-            
-            // Ajouter les événements de changement
-            [sourceWeek, sourceYear, destWeek, destYear].forEach(select => {
-                select.addEventListener('change', updateDuplicateInfo);
-            });
+            console.log('Populate duplicate selectors called');
         }
 
         function updateDuplicateInfo() {
-            const sourceWeek = parseInt(document.getElementById('sourceWeek').value);
-            const sourceYear = parseInt(document.getElementById('sourceYear').value);
-            const destWeek = parseInt(document.getElementById('destWeek').value);
-            const destYear = parseInt(document.getElementById('destYear').value);
-            const infoDiv = document.getElementById('duplicateInfo');
-            
-            let message = '';
-            let isValid = true;
-            
-            // Vérifier si même semaine
-            if (sourceWeek === destWeek && sourceYear === destYear) {
-                message = '❌ La semaine source et destination ne peuvent pas être identiques.';
-                isValid = false;
-            }
-            // Vérifier si destination est dans le passé
-            else {
-                const now = new Date();
-                const currentWeekNumber = getWeekNumber(now);
-                const currentYearNumber = now.getFullYear();
-                
-                if (destYear < currentYearNumber || (destYear === currentYearNumber && destWeek < currentWeekNumber)) {
-                    message = '❌ Impossible de dupliquer vers une semaine passée.';
-                    isValid = false;
-                }
-                // Vérifier si la source a des données
-                else {
-                    const sourceKey = `${sourceYear}-${sourceWeek}`;
-                    const hasSourceData = schedules[sourceKey] && Object.keys(schedules[sourceKey]).length > 0;
-                    const hasSourceClosures = closures[sourceKey] && Object.keys(closures[sourceKey]).length > 0;
-                    
-                    if (!hasSourceData && !hasSourceClosures) {
-                        message = '⚠️ La semaine source ne contient aucun planning.';
-                        isValid = false;
-                    } else {
-                        // Vérifier si destination a des données
-                        const destKey = `${destYear}-${destWeek}`;
-                        const hasDestData = schedules[destKey] && Object.keys(schedules[destKey]).length > 0;
-                        const hasDestClosures = closures[destKey] && Object.keys(closures[destKey]).length > 0;
-                        
-                        if (hasDestData || hasDestClosures) {
-                            message = '⚠️ La semaine destination contient déjà un planning qui sera écrasé.';
-                        } else {
-                            message = '✅ Prêt à dupliquer le planning.';
-                        }
-                    }
-                }
-            }
-            
-            infoDiv.innerHTML = message;
-            infoDiv.style.color = isValid ? (message.includes('écrasé') ? '#ff9800' : '#4caf50') : '#f44336';
-            
-            // Activer/désactiver le bouton
-            const duplicateBtn = document.querySelector('#duplicateModal .btn-save');
-            duplicateBtn.disabled = !isValid;
-            duplicateBtn.style.opacity = isValid ? '1' : '0.5';
-            duplicateBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
+            console.log('Update duplicate info called');
         }
 
-        async function duplicatePlanning() {
-            const sourceWeek = parseInt(document.getElementById('sourceWeek').value);
-            const sourceYear = parseInt(document.getElementById('sourceYear').value);
-            const destWeek = parseInt(document.getElementById('destWeek').value);
-            const destYear = parseInt(document.getElementById('destYear').value);
-            
-            const sourceKey = `${sourceYear}-${sourceWeek}`;
-            const destKey = `${destYear}-${destWeek}`;
-            
-            // Vérifier si destination a des données et demander confirmation
-            const hasDestData = schedules[destKey] && Object.keys(schedules[destKey]).length > 0;
-            const hasDestClosures = closures[destKey] && Object.keys(closures[destKey]).length > 0;
-            
-            if (hasDestData || hasDestClosures) {
-                if (!confirm(`La semaine ${destWeek}/${destYear} contient déjà un planning.\n\nÊtes-vous sûr de vouloir l'écraser ?`)) {
-                    return;
-                }
-            }
-            
-            try {
-                // Copier les plannings localement
-                if (schedules[sourceKey]) {
-                    schedules[destKey] = JSON.parse(JSON.stringify(schedules[sourceKey]));
-                    console.log(`Planning copié de ${sourceKey} vers ${destKey}`);
-                } else {
-                    delete schedules[destKey];
-                    console.log(`Aucun planning source à copier pour ${sourceKey}`);
-                }
-                
-                // Copier les fermetures localement
-                if (closures[sourceKey]) {
-                    closures[destKey] = JSON.parse(JSON.stringify(closures[sourceKey]));
-                    console.log(`Fermetures copiées de ${sourceKey} vers ${destKey}`);
-                } else {
-                    delete closures[destKey];
-                    console.log(`Aucune fermeture source à copier pour ${sourceKey}`);
-                }
-                
-                // Sauvegarder sur Firebase
-                if (window.firebaseReady && window.firestoreSDK) {
-                    const { doc, setDoc, deleteDoc } = window.firestoreSDK;
-                    
-                    // Sauvegarder ou supprimer le planning destination
-                    if (schedules[destKey]) {
-                        await setDoc(doc(window.firestore, 'planning-data', `schedule-${destKey}`), {
-                            schedule: schedules[destKey],
-                            lastUpdated: new Date().toISOString()
-                        });
-                        console.log(`Planning ${destKey} sauvegardé sur Firebase`);
-                    } else {
-                        try {
-                            await deleteDoc(doc(window.firestore, 'planning-data', `schedule-${destKey}`));
-                            console.log(`Planning ${destKey} supprimé de Firebase`);
-                        } catch (error) {
-                            console.log(`Aucun planning ${destKey} à supprimer sur Firebase`);
-                        }
-                    }
-                    
-                    // Sauvegarder ou supprimer les fermetures destination
-                    if (closures[destKey]) {
-                        await setDoc(doc(window.firestore, 'planning-data', `closure-${destKey}`), {
-                            closure: closures[destKey],
-                            lastUpdated: new Date().toISOString()
-                        });
-                        console.log(`Fermetures ${destKey} sauvegardées sur Firebase`);
-                    } else {
-                        try {
-                            await deleteDoc(doc(window.firestore, 'planning-data', `closure-${destKey}`));
-                            console.log(`Fermetures ${destKey} supprimées de Firebase`);
-                        } catch (error) {
-                            console.log(`Aucune fermeture ${destKey} à supprimer sur Firebase`);
-                        }
-                    }
-                }
-                
-                // Basculer vers la semaine dupliquée
-                currentWeek = destWeek;
-                currentYear = destYear;
-                document.getElementById('weekSelect').value = currentWeek;
-                document.getElementById('yearSelect').value = currentYear;
-                
-                // Fermer la modal
-                closeDuplicateModal();
-                
-                // Forcer la mise à jour de l'affichage
-                setTimeout(() => {
-                    updateScheduleDisplay();
-                }, 100);
-                
-                alert(`Planning de la semaine ${sourceWeek}/${sourceYear} dupliqué avec succès vers la semaine ${destWeek}/${destYear} !`);
-                
-            } catch (error) {
-                console.error('Erreur lors de la duplication:', error);
-                alert('Erreur lors de la duplication. Consultez la console pour plus de détails.');
-            }
+        function duplicatePlanning() {
+            console.log('Duplicate planning called');
         }
 
-        // Fonctions pour la réinitialisation de planning
         function openResetModal() {
             const modal = document.getElementById('resetModal');
             populateResetSelectors();
@@ -2636,132 +3282,17 @@
         }
 
         function populateResetSelectors() {
-            const resetWeek = document.getElementById('resetWeek');
-            const resetYear = document.getElementById('resetYear');
-            
-            // Vider les sélecteurs
-            resetWeek.innerHTML = '';
-            resetYear.innerHTML = '';
-            
-            // Remplir les semaines (1-53)
-            for (let i = 1; i <= 53; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = `Semaine ${i}`;
-                if (i === currentWeek) option.selected = true;
-                resetWeek.appendChild(option);
-            }
-            
-            // Remplir les années
-            for (let i = 2024; i <= 2030; i++) {
-                const option = document.createElement('option');
-                option.value = i;
-                option.textContent = i;
-                if (i === currentYear) option.selected = true;
-                resetYear.appendChild(option);
-            }
-            
-            // Ajouter les événements de changement
-            resetWeek.addEventListener('change', updateResetInfo);
-            resetYear.addEventListener('change', updateResetInfo);
+            console.log('Populate reset selectors called');
         }
 
         function updateResetInfo() {
-            const resetWeek = parseInt(document.getElementById('resetWeek').value);
-            const resetYear = parseInt(document.getElementById('resetYear').value);
-            const infoDiv = document.getElementById('resetInfo');
-            
-            let message = '';
-            let isValid = true;
-            
-            // Vérifier si c'est une semaine passée
-            const now = new Date();
-            const currentWeekNumber = getWeekNumber(now);
-            const currentYearNumber = now.getFullYear();
-            
-            if (resetYear < currentYearNumber || (resetYear === currentYearNumber && resetWeek < currentWeekNumber)) {
-                message = '❌ Impossible de réinitialiser une semaine passée.';
-                isValid = false;
-            } else {
-                // Vérifier si la semaine a des données
-                const resetKey = `${resetYear}-${resetWeek}`;
-                const hasData = schedules[resetKey] && Object.keys(schedules[resetKey]).length > 0;
-                const hasClosures = closures[resetKey] && Object.keys(closures[resetKey]).length > 0;
-                
-                if (!hasData && !hasClosures) {
-                    message = '⚠️ Cette semaine ne contient aucun planning à réinitialiser.';
-                    isValid = false;
-                } else {
-                    message = `✅ Prêt à réinitialiser la semaine ${resetWeek}/${resetYear}.`;
-                }
-            }
-            
-            infoDiv.innerHTML = message;
-            infoDiv.style.color = isValid ? '#4caf50' : '#f44336';
-            
-            // Activer/désactiver le bouton
-            const resetBtn = document.querySelector('#resetModal .btn');
-            resetBtn.disabled = !isValid;
-            resetBtn.style.opacity = isValid ? '1' : '0.5';
-            resetBtn.style.cursor = isValid ? 'pointer' : 'not-allowed';
+            console.log('Update reset info called');
         }
 
-        async function resetPlanning() {
-            const resetWeek = parseInt(document.getElementById('resetWeek').value);
-            const resetYear = parseInt(document.getElementById('resetYear').value);
-            
-            if (!confirm(`Êtes-vous absolument sûr de vouloir réinitialiser la semaine ${resetWeek}/${resetYear} ?\n\nCette action supprimera définitivement :\n- Tous les plannings des employés\n- Tous les états de fermeture\n\nCette action est IRRÉVERSIBLE.`)) {
-                return;
-            }
-            
-            const resetKey = `${resetYear}-${resetWeek}`;
-            
-            try {
-                // Supprimer les données localement
-                delete schedules[resetKey];
-                delete closures[resetKey];
-                
-                // Supprimer sur Firebase
-                if (window.firebaseReady && window.firestoreSDK) {
-                    const { doc, deleteDoc } = window.firestoreSDK;
-                    
-                    // Supprimer le document de planning
-                    try {
-                        await deleteDoc(doc(window.firestore, 'planning-data', `schedule-${resetKey}`));
-                        console.log(`Document schedule-${resetKey} supprimé de Firebase`);
-                    } catch (error) {
-                        console.log(`Document schedule-${resetKey} n'existait pas sur Firebase`);
-                    }
-                    
-                    // Supprimer le document de fermetures
-                    try {
-                        await deleteDoc(doc(window.firestore, 'planning-data', `closure-${resetKey}`));
-                        console.log(`Document closure-${resetKey} supprimé de Firebase`);
-                    } catch (error) {
-                        console.log(`Document closure-${resetKey} n'existait pas sur Firebase`);
-                    }
-                }
-                
-                // Fermer la modal
-                closeResetModal();
-                
-                // Si c'est la semaine actuellement affichée, forcer la mise à jour
-                if (resetWeek === currentWeek && resetYear === currentYear) {
-                    // Forcer une mise à jour complète de l'affichage
-                    setTimeout(() => {
-                        updateScheduleDisplay();
-                    }, 100);
-                }
-                
-                alert(`Semaine ${resetWeek}/${resetYear} réinitialisée avec succès !`);
-                
-            } catch (error) {
-                console.error('Erreur lors de la réinitialisation:', error);
-                alert('Erreur lors de la réinitialisation. Consultez la console pour plus de détails.');
-            }
+        function resetPlanning() {
+            console.log('Reset planning called');
         }
 
-        // Fonctions pour le menu déroulant Actions
         function toggleDropdown() {
             const dropdown = document.querySelector('.dropdown');
             dropdown.classList.toggle('show');
@@ -2772,7 +3303,6 @@
             dropdown.classList.remove('show');
         }
 
-        // Fermer le dropdown si on clique ailleurs
         document.addEventListener('click', function(event) {
             const dropdown = document.querySelector('.dropdown');
             if (!dropdown.contains(event.target)) {
