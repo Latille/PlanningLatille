@@ -19,7 +19,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, sendPasswordResetEmail, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, sendPasswordResetEmail, createUserWithEmailAndPassword, deleteUser } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-auth.js";
         import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-messaging.js";
 
         // Configuration Firebase
@@ -44,7 +44,7 @@
         window.firebaseAuth = auth;
         window.firebaseMessaging = messaging;
         window.firestoreSDK = { doc, setDoc, getDoc, collection, getDocs, deleteDoc, onSnapshot };
-        window.authSDK = { signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, sendPasswordResetEmail, createUserWithEmailAndPassword };
+        window.authSDK = { signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, sendPasswordResetEmail, createUserWithEmailAndPassword, deleteUser };
         window.messagingSDK = { getToken, onMessage };
         window.firebaseReady = true;
 
@@ -259,33 +259,133 @@
             text-align: center;
         }
 
-        /* Invitation section */
-        .invitation-section {
-            background: #e8f5e8;
-            border: 1px solid #4caf50;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
+        /* Improved Employee Management */
+        .employee-management {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
         }
 
-        .invite-btn {
+        .employee-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .employee-title {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .employee-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .status-badge.user {
+            background: #007bff;
+            color: white;
+        }
+
+        .status-badge.admin {
+            background: #dc3545;
+            color: white;
+        }
+
+        .status-badge.no-account {
+            background: #6c757d;
+            color: white;
+        }
+
+        .status-badge.pending {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .status-badge.active {
             background: #28a745;
             color: white;
+        }
+
+        .employee-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .employee-input {
+            width: 100%;
+            padding: 8px;
+            margin: 3px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .employee-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
             border: none;
-            padding: 5px 10px;
-            border-radius: 3px;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
-            margin-left: 10px;
+            font-weight: bold;
+            transition: all 0.2s;
         }
 
-        .invite-btn:hover {
-            background: #218838;
+        .action-btn.create {
+            background: #28a745;
+            color: white;
         }
 
-        .invite-btn:disabled {
+        .action-btn.reset {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .action-btn.delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .action-btn.promote {
+            background: #6f42c1;
+            color: white;
+        }
+
+        .action-btn.demote {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .action-btn:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+
+        .action-btn:disabled {
             background: #6c757d;
             cursor: not-allowed;
+            opacity: 0.5;
         }
 
         /* Read-only styling */
@@ -888,81 +988,13 @@
 
         .modal-content {
             background-color: white;
-            margin: 10% auto;
+            margin: 5% auto;
             padding: 20px;
             border-radius: 10px;
-            width: 90%;
-            max-width: 800px;
-        }
-
-        .employee-input {
-            width: 100%;
-            padding: 8px;
-            margin: 3px 0;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-
-        .employee-form-group {
-            margin-bottom: 8px;
-            padding: 8px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            background: #fafafa;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 0;
-            align-items: center;
-        }
-
-        .form-row input {
-            flex: none;
-        }
-
-        .form-row input[type="text"]:nth-child(2) {
-            width: 120px; /* Prénom */
-        }
-
-        .form-row input[type="text"]:nth-child(3) {
-            width: 200px; /* Nom */
-        }
-
-        .form-row input[type="email"] {
-            flex: 1; /* Email prend l'espace restant */
-            min-width: 200px;
-        }
-
-        .clear-employee-btn {
-            width: 32px;
-            height: 32px;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .clear-employee-btn:hover {
-            background: #c82333;
-        }
-
-        .employee-title {
-            font-weight: bold;
-            color: #2c3e50;
-            font-size: 15px;
-            display: flex;
-            align-items: center;
-            min-width: 80px;
-            flex-shrink: 0;
+            width: 95%;
+            max-width: 1000px;
+            max-height: 85vh;
+            overflow-y: auto;
         }
 
         .close {
@@ -1176,13 +1208,15 @@
     <!-- Version info -->
     <div class="version-info" id="versionInfo"></div>
 
-    <!-- Modal pour gérer les employés -->
+    <!-- Modal pour gérer les employés (Amélioré) -->
     <div id="employeeModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeEmployeeModal()">&times;</span>
-            <h2>Gérer les Employés</h2>
-            <div id="employeeInputs"></div>
-            <button class="btn btn-save" onclick="saveEmployees()">Sauvegarder les Noms</button>
+            <h2>Gestion des Employés</h2>
+            <div id="employeeManagement"></div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-save" onclick="saveEmployees()">💾 Sauvegarder les Modifications</button>
+            </div>
         </div>
     </div>
 
@@ -1250,13 +1284,13 @@
         let userRole = null;
         let currentWeek = 25;
         let currentYear = 2025;
-        let mustChangePassword = false; // Nouveau : indicateur de changement de MDP obligatoire
+        let mustChangePassword = false;
         let employees = [
-            { firstName: 'Antoine', lastName: '', email: '' },
-            { firstName: 'Léa', lastName: '', email: '' },
-            { firstName: 'Noémie', lastName: '', email: '' },
-            { firstName: 'Christelle', lastName: '', email: '' },
-            { firstName: 'Admin', lastName: 'LATILLE', email: 'latilledistribution@gmail.com' }
+            { firstName: 'Antoine', lastName: '', email: '', role: 'user', accountStatus: 'no-account' },
+            { firstName: 'Léa', lastName: '', email: '', role: 'user', accountStatus: 'no-account' },
+            { firstName: 'Noémie', lastName: '', email: '', role: 'user', accountStatus: 'no-account' },
+            { firstName: 'Christelle', lastName: '', email: '', role: 'user', accountStatus: 'no-account' },
+            { firstName: 'Admin', lastName: 'LATILLE', email: 'latilledistribution@gmail.com', role: 'admin', accountStatus: 'active' }
         ];
         let schedules = {};
         let closures = {};
@@ -1267,7 +1301,7 @@
         let dragStartState = null;
         let dragCurrentEmployee = null;
         let dragCurrentDay = null;
-        let planningValidated = true; // État de validation du planning courant
+        let planningValidated = true;
         let currentVersion = { number: 1, date: new Date().toLocaleDateString('fr-FR').slice(0, 8) };
 
         // Configuration des créneaux horaires
@@ -1364,25 +1398,23 @@
         function openPasswordModal() {
             document.getElementById('passwordModal').style.display = 'block';
             
-            // Adapter l'affichage selon si c'est obligatoire
             const isRequired = mustChangePassword;
             const closeBtn = document.getElementById('passwordCloseBtn');
             const warning = document.getElementById('passwordWarning');
             const title = document.getElementById('passwordModalTitle');
             
             if (isRequired) {
-                closeBtn.style.display = 'none'; // Masquer la croix
-                warning.style.display = 'block'; // Afficher l'avertissement
+                closeBtn.style.display = 'none';
+                warning.style.display = 'block';
                 title.textContent = 'Changement de mot de passe obligatoire';
             } else {
-                closeBtn.style.display = 'block'; // Afficher la croix
-                warning.style.display = 'none'; // Masquer l'avertissement
+                closeBtn.style.display = 'block';
+                warning.style.display = 'none';
                 title.textContent = 'Changer le mot de passe';
             }
         }
 
         function closePasswordModal() {
-            // Empêcher la fermeture si changement obligatoire
             if (mustChangePassword) {
                 alert('⚠️ Vous devez changer votre mot de passe temporaire avant de continuer.');
                 return;
@@ -1395,7 +1427,6 @@
             document.getElementById('passwordSuccess').textContent = '';
         }
 
-        // Fonction pour vérifier si changement de mot de passe requis
         async function checkPasswordChangeRequired(email) {
             try {
                 const { doc, getDoc } = window.firestoreSDK;
@@ -1433,7 +1464,6 @@
                 const { updatePassword } = window.authSDK;
                 await updatePassword(window.firebaseAuth.currentUser, newPassword);
                 
-                // Marquer le changement de mot de passe comme terminé
                 if (mustChangePassword) {
                     const { doc, setDoc } = window.firestoreSDK;
                     await setDoc(doc(window.firestore, 'user-settings', currentUser.email), {
@@ -1464,10 +1494,11 @@
 
         // Fonctions de gestion des rôles et permissions
         function determineUserRole(email) {
-            if (email === 'latilledistribution@gmail.com') {
-                return 'admin';
+            const employee = employees.find(emp => emp.email === email);
+            if (employee) {
+                return employee.role;
             }
-            return 'user';
+            return email === 'latilledistribution@gmail.com' ? 'admin' : 'user';
         }
 
         function getUserEmployeeIndex(email) {
@@ -1480,7 +1511,6 @@
             const employeeIndex = getUserEmployeeIndex(userEmail);
             if (employeeIndex === -1) return false;
 
-            // Vérifier si l'utilisateur a au moins 1h dans cette semaine
             const weekSchedule = schedules[weekKey];
             if (!weekSchedule) return false;
 
@@ -1495,7 +1525,7 @@
                 }
             }
 
-            return totalMinutes >= 60; // Au moins 1 heure
+            return totalMinutes >= 60;
         }
 
         function updateUIForRole() {
@@ -1503,10 +1533,8 @@
             const weekKey = `${currentYear}-${currentWeek}`;
             const hasAccess = checkWeekAccess(weekKey, currentUser.email);
 
-            // Afficher/masquer les contrôles admin
             document.getElementById('adminControls').style.display = isAdmin ? 'block' : 'none';
 
-            // Gestion de l'accès au planning
             if (!hasAccess) {
                 document.getElementById('accessDenied').style.display = 'block';
                 document.getElementById('scheduleContent').style.display = 'none';
@@ -1515,22 +1543,437 @@
                 document.getElementById('accessDenied').style.display = 'none';
                 document.getElementById('scheduleContent').style.display = 'block';
                 
-                // Mode lecture seule pour les utilisateurs
                 if (!isAdmin) {
                     document.body.classList.add('read-only');
                 } else {
                     document.body.classList.remove('read-only');
                 }
 
-                // Section validation (admin seulement)
                 document.getElementById('validationSection').style.display = 
                     (isAdmin && !planningValidated) ? 'block' : 'none';
             }
 
-            // Mettre à jour les informations utilisateur
             document.getElementById('userEmail').textContent = currentUser.email;
             document.getElementById('userRole').textContent = isAdmin ? 'Administrateur' : 'Utilisateur';
             document.getElementById('userRole').className = `user-role ${isAdmin ? 'admin' : ''}`;
+        }
+
+        // Gestion améliorée des employés
+        async function getEmployeeAccountStatus(email) {
+            if (!email) return 'no-account';
+            
+            try {
+                const { doc, getDoc } = window.firestoreSDK;
+                const userSettingsDoc = await getDoc(doc(window.firestore, 'user-settings', email));
+                
+                if (userSettingsDoc.exists()) {
+                    const data = userSettingsDoc.data();
+                    return data.requirePasswordChange ? 'pending' : 'active';
+                } else {
+                    return 'no-account';
+                }
+            } catch (error) {
+                return 'no-account';
+            }
+        }
+
+        async function updateEmployeeAccountStatuses() {
+            for (let i = 0; i < employees.length; i++) {
+                if (employees[i].email) {
+                    employees[i].accountStatus = await getEmployeeAccountStatus(employees[i].email);
+                }
+            }
+        }
+
+        // Fonction pour générer un mot de passe temporaire
+        function generateTempPassword() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+            let password = '';
+            for (let i = 0; i < 8; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return password;
+        }
+
+        // Fonction améliorée pour créer un compte
+        async function createEmployeeAccount(employeeIndex) {
+            const employee = employees[employeeIndex];
+            if (!employee.email) {
+                alert('Veuillez d\'abord saisir l\'adresse email de cet employé');
+                return;
+            }
+
+            if (!confirm(`Créer un compte pour ${employee.firstName} (${employee.email}) ?`)) {
+                return;
+            }
+
+            try {
+                const tempPassword = generateTempPassword();
+                const currentUserEmail = currentUser.email;
+                
+                const { createUserWithEmailAndPassword } = window.authSDK;
+                await createUserWithEmailAndPassword(window.firebaseAuth, employee.email, tempPassword);
+                
+                // Se reconnecter en tant qu'admin
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                const { signInWithEmailAndPassword } = window.authSDK;
+                await signInWithEmailAndPassword(window.firebaseAuth, currentUserEmail, 'admin123');
+                
+                // Marquer le compte comme nécessitant un changement de mot de passe
+                const { doc, setDoc } = window.firestoreSDK;
+                await setDoc(doc(window.firestore, 'user-settings', employee.email), {
+                    requirePasswordChange: true,
+                    createdAt: new Date().toISOString(),
+                    createdBy: currentUser.email,
+                    employeeIndex: employeeIndex,
+                    role: employee.role || 'user'
+                });
+
+                // Envoyer l'email avec le template correct
+                await sendEmployeeEmail(employee, tempPassword, 'creation');
+                
+                // Mettre à jour le statut
+                employees[employeeIndex].accountStatus = 'pending';
+                await openEmployeeModal(); // Refresh de l'affichage
+                
+                alert(`✅ Compte créé avec succès !\n\nEmail : ${employee.email}\nMot de passe temporaire : ${tempPassword}\n\n(Ces informations ont été envoyées par email)`);
+
+            } catch (error) {
+                console.error('Erreur création compte:', error);
+                
+                if (error.code === 'auth/email-already-in-use') {
+                    alert('Un compte existe déjà avec cette adresse email');
+                } else {
+                    alert('Erreur lors de la création du compte');
+                }
+            }
+        }
+
+        // Fonction pour réinitialiser le mot de passe
+        async function resetEmployeePassword(employeeIndex) {
+            const employee = employees[employeeIndex];
+            if (!employee.email) return;
+
+            if (!confirm(`Réinitialiser le mot de passe de ${employee.firstName} ?`)) {
+                return;
+            }
+
+            try {
+                const tempPassword = generateTempPassword();
+                
+                // Mettre à jour dans user-settings
+                const { doc, setDoc } = window.firestoreSDK;
+                await setDoc(doc(window.firestore, 'user-settings', employee.email), {
+                    requirePasswordChange: true,
+                    passwordResetAt: new Date().toISOString(),
+                    resetBy: currentUser.email,
+                    role: employee.role || 'user'
+                });
+
+                // Envoyer l'email avec le nouveau mot de passe
+                await sendEmployeeEmail(employee, tempPassword, 'reset');
+                
+                // Mettre à jour le statut
+                employees[employeeIndex].accountStatus = 'pending';
+                await openEmployeeModal(); // Refresh de l'affichage
+                
+                alert(`✅ Mot de passe réinitialisé !\n\nNouveau mot de passe temporaire : ${tempPassword}\n\n(Envoyé par email à ${employee.email})`);
+
+            } catch (error) {
+                console.error('Erreur réinitialisation:', error);
+                alert('Erreur lors de la réinitialisation');
+            }
+        }
+
+        // Fonction pour supprimer l'accès d'un employé
+        async function deleteEmployeeAccess(employeeIndex) {
+            const employee = employees[employeeIndex];
+            if (!employee.email) return;
+
+            if (!confirm(`Supprimer l'accès de ${employee.firstName} ?\n\nCela supprimera son compte utilisateur mais conservera ses informations personnelles.`)) {
+                return;
+            }
+
+            try {
+                // Supprimer de user-settings
+                const { doc, deleteDoc } = window.firestoreSDK;
+                await deleteDoc(doc(window.firestore, 'user-settings', employee.email));
+                
+                // Marquer le statut comme pas de compte
+                employees[employeeIndex].accountStatus = 'no-account';
+                await openEmployeeModal(); // Refresh de l'affichage
+                
+                alert(`✅ Accès supprimé pour ${employee.firstName}`);
+
+            } catch (error) {
+                console.error('Erreur suppression accès:', error);
+                alert('Erreur lors de la suppression de l\'accès');
+            }
+        }
+
+        // Fonction pour changer le rôle d'un employé
+        async function changeEmployeeRole(employeeIndex, newRole) {
+            const employee = employees[employeeIndex];
+            const roleName = newRole === 'admin' ? 'Administrateur' : 'Utilisateur';
+            
+            if (!confirm(`Changer le rôle de ${employee.firstName} vers ${roleName} ?`)) {
+                return;
+            }
+
+            try {
+                employees[employeeIndex].role = newRole;
+                
+                // Si l'employé a un compte, mettre à jour dans user-settings
+                if (employee.email && employee.accountStatus !== 'no-account') {
+                    const { doc, setDoc, getDoc } = window.firestoreSDK;
+                    const userSettingsDoc = await getDoc(doc(window.firestore, 'user-settings', employee.email));
+                    
+                    if (userSettingsDoc.exists()) {
+                        const existingData = userSettingsDoc.data();
+                        await setDoc(doc(window.firestore, 'user-settings', employee.email), {
+                            ...existingData,
+                            role: newRole,
+                            roleChangedAt: new Date().toISOString(),
+                            roleChangedBy: currentUser.email
+                        });
+                    }
+                }
+                
+                await saveEmployees();
+                await openEmployeeModal(); // Refresh de l'affichage
+                
+                alert(`✅ Rôle de ${employee.firstName} changé vers ${roleName}`);
+
+            } catch (error) {
+                console.error('Erreur changement rôle:', error);
+                alert('Erreur lors du changement de rôle');
+            }
+        }
+
+        // Fonction pour envoyer des emails
+        async function sendEmployeeEmail(employee, tempPassword, type) {
+            try {
+                let subject, message;
+                
+                if (type === 'creation') {
+                    subject = `Bienvenue - Accès au planning LATILLE`;
+                    message = `Bonjour ${employee.firstName},
+
+Votre compte a été créé pour accéder au système de planning LATILLE.
+
+🔐 VOS IDENTIFIANTS :
+Email : ${employee.email}
+Mot de passe temporaire : ${tempPassword}
+
+⚠️ IMPORTANT :
+- Vous devez changer ce mot de passe temporaire lors de votre première connexion
+- Gardez ces identifiants en sécurité
+
+📋 ACCÈS AU PLANNING :
+Connectez-vous sur : https://latille.github.io/PlanningLatille/
+
+Vous pourrez consulter et imprimer vos plannings hebdomadaires.
+
+Si vous avez des questions, contactez l'administrateur.
+
+Cordialement,
+L'équipe LATILLE`;
+                } else {
+                    subject = `Réinitialisation - Accès au planning LATILLE`;
+                    message = `Bonjour ${employee.firstName},
+
+Votre mot de passe a été réinitialisé.
+
+🔐 NOUVEAUX IDENTIFIANTS :
+Email : ${employee.email}
+Nouveau mot de passe temporaire : ${tempPassword}
+
+⚠️ IMPORTANT :
+- Vous devez changer ce mot de passe temporaire lors de votre prochaine connexion
+- Gardez ces identifiants en sécurité
+
+📋 ACCÈS AU PLANNING :
+Connectez-vous sur : https://latille.github.io/PlanningLatille/
+
+Si vous avez des questions, contactez l'administrateur.
+
+Cordialement,
+L'équipe LATILLE`;
+                }
+
+                const templateParams = {
+                    to_name: employee.firstName,
+                    to_email: employee.email,
+                    from_name: 'LATILLE Distribution',
+                    subject: subject,
+                    message: message,
+                    password_temp: tempPassword,
+                    planning_url: 'https://latille.github.io/PlanningLatille/',
+                    admin_email: 'latilledistribution@gmail.com'
+                };
+
+                await emailjs.send('service_jaocvbq', 'template_6y2uwsn', templateParams);
+                console.log(`Email envoyé à ${employee.email}`);
+
+            } catch (error) {
+                console.error(`Erreur envoi email à ${employee.email}:`, error);
+                throw error;
+            }
+        }
+
+        // Modal employé améliorée
+        async function openEmployeeModal() {
+            if (userRole !== 'admin') return;
+            
+            await updateEmployeeAccountStatuses();
+            
+            const modal = document.getElementById('employeeModal');
+            const container = document.getElementById('employeeManagement');
+            container.innerHTML = '';
+            
+            for (let index = 0; index < employees.length; index++) {
+                const employee = employees[index];
+                const isAdmin = index === 4;
+                
+                const employeeDiv = document.createElement('div');
+                employeeDiv.className = 'employee-management';
+                
+                // Statut badge
+                let statusClass = 'no-account';
+                let statusText = 'Pas de compte';
+                
+                switch (employee.accountStatus) {
+                    case 'active':
+                        statusClass = 'active';
+                        statusText = 'Actif';
+                        break;
+                    case 'pending':
+                        statusClass = 'pending';
+                        statusText = 'MDP temporaire';
+                        break;
+                    case 'no-account':
+                    default:
+                        statusClass = 'no-account';
+                        statusText = 'Pas de compte';
+                        break;
+                }
+                
+                // Actions disponibles
+                let actionsHTML = '';
+                if (!isAdmin) {
+                    if (employee.accountStatus === 'no-account') {
+                        actionsHTML = `
+                            <button class="action-btn create" onclick="createEmployeeAccount(${index})" ${!employee.email ? 'disabled' : ''}>
+                                👤 Créer compte
+                            </button>`;
+                    } else {
+                        actionsHTML = `
+                            <button class="action-btn reset" onclick="resetEmployeePassword(${index})">
+                                🔄 Réinitialiser MDP
+                            </button>
+                            <button class="action-btn delete" onclick="deleteEmployeeAccess(${index})">
+                                🗑️ Supprimer accès
+                            </button>`;
+                    }
+                    
+                    // Boutons de changement de rôle
+                    if (employee.role === 'user') {
+                        actionsHTML += `
+                            <button class="action-btn promote" onclick="changeEmployeeRole(${index}, 'admin')">
+                                ⬆️ Promouvoir Admin
+                            </button>`;
+                    } else if (employee.role === 'admin') {
+                        actionsHTML += `
+                            <button class="action-btn demote" onclick="changeEmployeeRole(${index}, 'user')">
+                                ⬇️ Rétrograder User
+                            </button>`;
+                    }
+                }
+                
+                employeeDiv.innerHTML = `
+                    <div class="employee-header">
+                        <div class="employee-title">${isAdmin ? 'Administrateur' : `Employé ${index + 1}`}</div>
+                        <div class="employee-status">
+                            <span class="status-badge ${employee.role}">${employee.role === 'admin' ? 'Admin' : 'User'}</span>
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                        </div>
+                    </div>
+                    <div class="employee-details">
+                        <input type="text" class="employee-input" value="${employee.firstName}" 
+                               placeholder="Prénom" id="employee-firstName-${index}" 
+                               ${isAdmin ? 'readonly' : ''} oninput="formatFirstName(this)">
+                        <input type="text" class="employee-input" value="${employee.lastName}" 
+                               placeholder="Nom" id="employee-lastName-${index}" 
+                               ${isAdmin ? 'readonly' : ''} oninput="formatLastName(this)">
+                        <input type="email" class="employee-input" value="${employee.email}" 
+                               placeholder="Email" id="employee-email-${index}" 
+                               ${isAdmin ? 'readonly' : ''} oninput="formatEmail(this)">
+                    </div>
+                    <div class="employee-actions">
+                        ${actionsHTML}
+                    </div>
+                `;
+                
+                container.appendChild(employeeDiv);
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeEmployeeModal() {
+            document.getElementById('employeeModal').style.display = 'none';
+        }
+
+        // Fonctions de formatage automatique
+        function formatFirstName(input) {
+            let value = input.value;
+            if (value.length > 0) {
+                value = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+                input.value = value;
+            }
+        }
+
+        function formatLastName(input) {
+            input.value = input.value.toUpperCase();
+        }
+
+        function formatEmail(input) {
+            input.value = input.value.toLowerCase();
+        }
+
+        function saveEmployees() {
+            if (userRole !== 'admin') return;
+            
+            const newEmployees = [];
+            for (let i = 0; i < 5; i++) {
+                if (i === 4) {
+                    newEmployees.push(employees[4]);
+                } else {
+                    const firstName = document.getElementById(`employee-firstName-${i}`).value || '';
+                    const lastName = document.getElementById(`employee-lastName-${i}`).value || '';
+                    const email = document.getElementById(`employee-email-${i}`).value || '';
+                    
+                    newEmployees.push({
+                        firstName: firstName,
+                        lastName: lastName,
+                        email: email,
+                        role: employees[i].role || 'user',
+                        accountStatus: employees[i].accountStatus || 'no-account'
+                    });
+                }
+            }
+            
+            employees = newEmployees;
+            updateScheduleDisplay();
+            closeEmployeeModal();
+            
+            saveSchedulesToFirebase().then(success => {
+                if (success) {
+                    alert('Informations des employés sauvegardées !');
+                } else {
+                    alert('Erreur lors de la sauvegarde');
+                }
+            });
         }
 
         // Fonctions de version et validation
@@ -1550,15 +1993,12 @@
             try {
                 const weekKey = `${currentYear}-${currentWeek}`;
                 
-                // Incrémenter la version
                 currentVersion.number += 0.1;
                 currentVersion.number = Math.round(currentVersion.number * 10) / 10;
                 currentVersion.date = new Date().toLocaleDateString('fr-FR').slice(0, 8);
 
-                // Marquer comme validé
                 planningValidated = true;
 
-                // Sauvegarder la version avec le planning
                 const planningData = {
                     schedule: schedules[weekKey] || {},
                     closure: closures[weekKey] || {},
@@ -1571,7 +2011,6 @@
                 const { doc, setDoc } = window.firestoreSDK;
                 await setDoc(doc(window.firestore, 'planning-data', `validated-${weekKey}`), planningData);
 
-                // Générer et envoyer les notifications
                 await sendPlanningNotifications(weekKey);
 
                 updateUIForRole();
@@ -1586,7 +2025,6 @@
 
         async function sendPlanningNotifications(weekKey) {
             try {
-                // Identifier les employés concernés par ce planning
                 const concernedEmployees = [];
                 const weekSchedule = schedules[weekKey];
                 
@@ -1611,16 +2049,13 @@
                     }
                 }
 
-                // Toujours inclure l'administrateur
                 if (!concernedEmployees.find(emp => emp.email === 'latilledistribution@gmail.com')) {
-                    concernedEmployees.push(employees[4]); // Admin
+                    concernedEmployees.push(employees[4]);
                 }
 
-                // Générer le PDF
                 const pdfBlob = await generatePlanningPDF(weekKey);
                 const pdfBase64 = await blobToBase64(pdfBlob);
 
-                // Envoyer l'email à chaque employé concerné
                 for (const employee of concernedEmployees) {
                     if (employee.email) {
                         await sendPlanningEmail(employee, weekKey, pdfBase64);
@@ -1635,37 +2070,39 @@
 
         async function sendPlanningEmail(employee, weekKey, pdfBase64) {
             try {
+                const message = `Bonjour ${employee.firstName},
+
+Voici le planning validé pour la semaine ${currentWeek}/${currentYear}.
+
+📋 PLANNING SEMAINE ${currentWeek} - ${currentYear}
+Version : ${currentVersion.number}
+Date de validation : ${currentVersion.date}
+
+Le planning est en pièce jointe au format PDF.
+
+🌐 ACCÈS EN LIGNE :
+Vous pouvez aussi consulter vos plannings sur : https://latille.github.io/PlanningLatille/
+
+Si vous avez des questions, contactez l'administrateur.
+
+Cordialement,
+L'équipe LATILLE`;
+
                 const templateParams = {
                     to_name: employee.firstName,
                     to_email: employee.email,
                     from_name: 'LATILLE Distribution',
                     subject: `Planning Semaine ${currentWeek}/${currentYear} - Version ${currentVersion.number}`,
-                    employee_email: employee.email,
-                    temp_password: '', // Pas de MDP pour ce type d'email
+                    message: message,
                     planning_url: 'https://latille.github.io/PlanningLatille/',
-                    message: `Bonjour ${employee.firstName},
-
-Veuillez trouver en pièce jointe votre planning pour la semaine ${currentWeek}/${currentYear}.
-
-📋 DÉTAILS :
-Version: ${currentVersion.number}
-Date de validation: ${currentVersion.date}
-
-📋 ACCÈS AU PLANNING EN LIGNE :
-https://latille.github.io/PlanningLatille/
-
-Si vous avez des questions, contactez l'administrateur.
-
-Cordialement,
-L'équipe LATILLE`,
-                    pdf_attachment: pdfBase64
+                    admin_email: 'latilledistribution@gmail.com'
                 };
 
                 await emailjs.send('service_jaocvbq', 'template_6y2uwsn', templateParams);
-                console.log(`Email envoyé à ${employee.email}`);
+                console.log(`Email planning envoyé à ${employee.email}`);
 
             } catch (error) {
-                console.error(`Erreur envoi email à ${employee.email}:`, error);
+                console.error(`Erreur envoi email planning à ${employee.email}:`, error);
             }
         }
 
@@ -1678,153 +2115,6 @@ L'équipe LATILLE`,
             });
         }
 
-        // Fonction pour générer un mot de passe temporaire
-        function generateTempPassword() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-            let password = '';
-            for (let i = 0; i < 8; i++) {
-                password += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return password;
-        }
-
-        // Fonction pour envoyer les invitations
-        async function sendEmployeeInvitation(employeeIndex) {
-            const employee = employees[employeeIndex];
-            if (!employee.email) {
-                alert('Veuillez d\'abord saisir l\'adresse email de cet employé');
-                return;
-            }
-
-            if (!confirm(`Envoyer une invitation à ${employee.firstName} (${employee.email}) ?\n\nCela créera un compte utilisateur avec un mot de passe temporaire.`)) {
-                return;
-            }
-
-            try {
-                // Générer un mot de passe temporaire
-                const tempPassword = generateTempPassword();
-                
-                // Créer le compte utilisateur dans Firebase Auth
-                const { createUserWithEmailAndPassword } = window.authSDK;
-                
-                // Sauvegarder l'utilisateur actuel
-                const currentUserEmail = currentUser.email;
-                
-                try {
-                    // Créer le nouveau compte
-                    await createUserWithEmailAndPassword(window.firebaseAuth, employee.email, tempPassword);
-                    
-                    // Se reconnecter en tant qu'admin
-                    await new Promise(resolve => setTimeout(resolve, 1000)); // Attendre un peu
-                    const { signInWithEmailAndPassword } = window.authSDK;
-                    await signInWithEmailAndPassword(window.firebaseAuth, currentUserEmail, 'admin123');
-                    
-                } catch (authError) {
-                    if (authError.code === 'auth/email-already-in-use') {
-                        // L'utilisateur existe déjà, utiliser la réinitialisation de mot de passe
-                        const { sendPasswordResetEmail } = window.authSDK;
-                        await sendPasswordResetEmail(window.firebaseAuth, employee.email);
-                        
-                        // Envoyer l'email d'invitation sans mot de passe
-                        const templateParams = {
-                            to_name: employee.firstName,
-                            to_email: employee.email,
-                            from_name: 'LATILLE Distribution',
-                            subject: 'Invitation - Accès au planning LATILLE',
-                            employee_email: employee.email,
-                            temp_password: '', // Pas de MDP temporaire car compte existant
-                            planning_url: 'https://latille.github.io/PlanningLatille/',
-                            message: `Bonjour ${employee.firstName},
-
-Vous avez été invité(e) à accéder au système de planning LATILLE.
-
-🔐 CONNEXION :
-Email : ${employee.email}
-Un email de réinitialisation de mot de passe vous a été envoyé.
-
-⚠️ IMPORTANT :
-- Utilisez le lien de réinitialisation pour créer votre mot de passe
-- Connectez-vous ensuite avec vos nouveaux identifiants
-
-📋 ACCÈS AU PLANNING :
-${employee.email.includes('@') ? 'https://latille.github.io/PlanningLatille/' : ''}
-
-Vous pourrez consulter et imprimer vos plannings hebdomadaires.
-
-Si vous avez des questions, contactez l'administrateur.
-
-Cordialement,
-L'équipe LATILLE`
-                        };
-
-                        await emailjs.send('service_jaocvbq', 'template_6y2uwsn', templateParams);
-                        alert(`L'utilisateur existe déjà. Un email de réinitialisation a été envoyé à ${employee.email}`);
-                        return;
-                    } else {
-                        throw authError;
-                    }
-                }
-
-                // Marquer le compte comme nécessitant un changement de mot de passe
-                const { doc, setDoc } = window.firestoreSDK;
-                await setDoc(doc(window.firestore, 'user-settings', employee.email), {
-                    requirePasswordChange: true,
-                    createdAt: new Date().toISOString(),
-                    createdBy: currentUser.email,
-                    employeeIndex: employeeIndex
-                });
-
-                // Envoyer l'email d'invitation avec le mot de passe temporaire
-                const templateParams = {
-                    to_name: employee.firstName,
-                    to_email: employee.email,
-                    from_name: 'LATILLE Distribution',
-                    subject: 'Invitation - Accès au planning LATILLE',
-                    employee_email: employee.email,
-                    temp_password: tempPassword,
-                    planning_url: 'https://latille.github.io/PlanningLatille/',
-                    message: `Bonjour ${employee.firstName},
-
-Vous avez été invité(e) à accéder au système de planning LATILLE.
-
-🔐 VOS IDENTIFIANTS DE CONNEXION :
-Email : ${employee.email}
-Mot de passe temporaire : ${tempPassword}
-
-⚠️ IMPORTANT :
-- Connectez-vous avec ces identifiants
-- Changez IMMÉDIATEMENT votre mot de passe
-- Utilisez le bouton "Changer MDP" après connexion
-
-📋 ACCÈS AU PLANNING :
-https://latille.github.io/PlanningLatille/
-
-Vous pourrez consulter et imprimer vos plannings hebdomadaires.
-
-Si vous avez des questions, contactez l'administrateur.
-
-Cordialement,
-L'équipe LATILLE`
-                };
-
-                await emailjs.send('service_jaocvbq', 'template_6y2uwsn', templateParams);
-                
-                alert(`✅ Invitation envoyée avec succès !\n\nCompte créé pour : ${employee.email}\nMot de passe temporaire : ${tempPassword}\n\n(Ces informations ont été envoyées par email)`);
-
-            } catch (error) {
-                console.error('Erreur création compte/envoi invitation:', error);
-                
-                let errorMessage = 'Erreur lors de l\'envoi de l\'invitation';
-                if (error.code === 'auth/invalid-email') {
-                    errorMessage = 'Adresse email invalide';
-                } else if (error.code === 'auth/weak-password') {
-                    errorMessage = 'Mot de passe trop faible';
-                }
-                
-                alert(errorMessage);
-            }
-        }
-
         // Génération PDF
         async function generatePlanningPDF(weekKey) {
             const { jsPDF } = window.jspdf;
@@ -1834,13 +2124,11 @@ L'équipe LATILLE`
                 format: 'a4'
             });
 
-            // Configuration
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
             const margin = 10;
             const dates = getWeekDates(currentYear, currentWeek);
 
-            // Titre
             doc.setFontSize(16);
             doc.setFont(undefined, 'bold');
             doc.text('PLANNING SPAR LATILLE', pageWidth / 2, 20, { align: 'center' });
@@ -1851,16 +2139,11 @@ L'équipe LATILLE`
             doc.setFontSize(10);
             doc.text(`Du ${dates[0].toLocaleDateString('fr-FR')} au ${dates[6].toLocaleDateString('fr-FR')}`, pageWidth / 2, 35, { align: 'center' });
 
-            // Version en bas à droite
             doc.setFontSize(8);
             const versionStr = `S${currentWeek}/${currentYear} - ${currentVersion.date} - v${currentVersion.number}`;
             doc.text(versionStr, pageWidth - margin, pageHeight - 5, { align: 'right' });
 
-            // Tableau des plannings
             const tableData = [];
-            const headers = ['Horaires', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-            
-            // En-têtes avec dates
             const headerRow = ['Horaires'];
             const dayNames = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
             for (let i = 0; i < 7; i++) {
@@ -1868,7 +2151,6 @@ L'équipe LATILLE`
             }
             tableData.push(headerRow);
 
-            // Ligne des employés
             const employeeRow = ['Employés'];
             for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
                 const dayEmployees = employees.map(emp => emp.firstName).join(' | ');
@@ -1876,7 +2158,6 @@ L'équipe LATILLE`
             }
             tableData.push(employeeRow);
 
-            // Lignes des créneaux
             timeSlots.forEach((slot, slotIndex) => {
                 const row = [`${slot.start}-${slot.end}`];
                 
@@ -1891,7 +2172,6 @@ L'équipe LATILLE`
                         }
                     });
                     
-                    // Vérifier les fermetures
                     if (isSlotClosed(dayIndex, slotIndex)) {
                         cellContent = 'FERMÉ';
                     }
@@ -1901,7 +2181,6 @@ L'équipe LATILLE`
                 tableData.push(row);
             });
 
-            // Créer le tableau avec autoTable
             doc.autoTable({
                 startY: 45,
                 head: [tableData[0], tableData[1]],
@@ -1932,27 +2211,22 @@ L'équipe LATILLE`
                 return;
             }
 
-            // Écouter les changements d'authentification
             const { onAuthStateChanged } = window.authSDK;
             onAuthStateChanged(window.firebaseAuth, async (user) => {
                 if (user) {
                     currentUser = user;
                     userRole = determineUserRole(user.email);
                     
-                    // Vérifier si l'utilisateur doit changer son mot de passe
                     await checkPasswordChangeRequired(user.email);
                     
-                    // Masquer la modal de login
                     document.getElementById('loginModal').style.display = 'none';
                     document.getElementById('mainApp').style.display = 'block';
                     
-                    // Si changement de mot de passe requis, forcer l'ouverture de la modal
                     if (mustChangePassword) {
                         openPasswordModal();
                         alert('⚠️ Première connexion détectée !\nVous devez changer votre mot de passe temporaire.');
                     }
                     
-                    // Initialiser l'application
                     populateSelectors();
                     loadEmployees();
                     loadSchedulesFromFirebase();
@@ -1960,7 +2234,6 @@ L'équipe LATILLE`
                     updateVersionInfo();
                     
                 } else {
-                    // Afficher la modal de login
                     document.getElementById('loginModal').style.display = 'flex';
                     document.getElementById('mainApp').style.display = 'none';
                     currentUser = null;
@@ -2009,13 +2282,11 @@ L'équipe LATILLE`
             try {
                 const { doc, setDoc } = window.firestoreSDK;
                 
-                // Sauvegarder les employés
                 await setDoc(doc(window.firestore, 'planning-data', 'employees'), {
                     employees: employees,
                     lastUpdated: new Date().toISOString()
                 });
 
-                // Sauvegarder les plannings
                 for (const [key, schedule] of Object.entries(schedules)) {
                     await setDoc(doc(window.firestore, 'planning-data', `schedule-${key}`), {
                         schedule: schedule,
@@ -2023,7 +2294,6 @@ L'équipe LATILLE`
                     });
                 }
 
-                // Sauvegarder les fermetures
                 for (const [key, closure] of Object.entries(closures)) {
                     await setDoc(doc(window.firestore, 'planning-data', `closure-${key}`), {
                         closure: closure,
@@ -2031,7 +2301,6 @@ L'équipe LATILLE`
                     });
                 }
 
-                // Marquer comme modifié
                 markPlanningAsModified();
 
                 console.log('Données sauvegardées sur Firebase');
@@ -2051,13 +2320,11 @@ L'équipe LATILLE`
             try {
                 const { doc, getDoc, collection, getDocs } = window.firestoreSDK;
                 
-                // Charger les employés
                 const employeesDoc = await getDoc(doc(window.firestore, 'planning-data', 'employees'));
                 if (employeesDoc.exists()) {
                     employees = employeesDoc.data().employees || employees;
                 }
 
-                // Charger tous les documents
                 const planningCollection = collection(window.firestore, 'planning-data');
                 const snapshot = await getDocs(planningCollection);
                 
@@ -2258,11 +2525,11 @@ L'équipe LATILLE`
         function loadEmployees() {
             if (employees.length !== 5) {
                 employees = [
-                    { firstName: 'Antoine', lastName: '', email: '' },
-                    { firstName: 'Léa', lastName: '', email: '' },
-                    { firstName: 'Noémie', lastName: '', email: '' },
-                    { firstName: 'Christelle', lastName: '', email: '' },
-                    { firstName: 'Admin', lastName: 'LATILLE', email: 'latilledistribution@gmail.com' }
+                    { firstName: 'Antoine', lastName: '', email: '', role: 'user', accountStatus: 'no-account' },
+                    { firstName: 'Léa', lastName: '', email: '', role: 'user', accountStatus: 'no-account' },
+                    { firstName: 'Noémie', lastName: '', email: '', role: 'user', accountStatus: 'no-account' },
+                    { firstName: 'Christelle', lastName: '', email: '', role: 'user', accountStatus: 'no-account' },
+                    { firstName: 'Admin', lastName: 'LATILLE', email: 'latilledistribution@gmail.com', role: 'admin', accountStatus: 'active' }
                 ];
             }
         }
@@ -2515,137 +2782,6 @@ L'équipe LATILLE`
                 const teamElement = document.getElementById(`${day}-team-total`);
                 teamElement.textContent = `${teamHours}h${teamMinutes.toString().padStart(2, '0')}`;
                 teamElement.style.fontSize = '10px';
-            });
-        }
-
-        // Modal functions
-        async function openEmployeeModal() {
-            if (userRole !== 'admin') return;
-            
-            const modal = document.getElementById('employeeModal');
-            const inputs = document.getElementById('employeeInputs');
-            inputs.innerHTML = '';
-            
-            for (let index = 0; index < employees.length; index++) {
-                const employee = employees[index];
-                const group = document.createElement('div');
-                group.className = 'employee-form-group';
-                
-                const isAdmin = index === 4;
-                
-                // Vérifier le statut du compte
-                let accountStatus = '';
-                if (!isAdmin && employee.email) {
-                    try {
-                        const { doc, getDoc } = window.firestoreSDK;
-                        const userSettingsDoc = await getDoc(doc(window.firestore, 'user-settings', employee.email));
-                        
-                        if (userSettingsDoc.exists()) {
-                            const data = userSettingsDoc.data();
-                            if (data.requirePasswordChange) {
-                                accountStatus = '<span style="color: #ff9800;">⏳ Compte créé - MDP temporaire</span>';
-                            } else {
-                                accountStatus = '<span style="color: #4caf50;">✅ Compte actif</span>';
-                            }
-                        } else {
-                            accountStatus = '<span style="color: #6c757d;">➕ Pas de compte</span>';
-                        }
-                    } catch (error) {
-                        accountStatus = '<span style="color: #6c757d;">❓ Statut inconnu</span>';
-                    }
-                }
-                
-                const inviteSection = (!isAdmin && employee.email) ? 
-                    `<div class="invitation-section">
-                        <span>Statut: Utilisateur | ${accountStatus}</span>
-                        <button type="button" class="invite-btn" onclick="sendEmployeeInvitation(${index})">
-                            📧 ${accountStatus.includes('Pas de compte') ? 'Créer compte' : 'Renvoyer invitation'}
-                        </button>
-                    </div>` : '';
-                
-                group.innerHTML = `
-                    <div class="form-row">
-                        <div class="employee-title">${isAdmin ? 'Admin' : 'Employé'} ${index + 1}</div>
-                        <input type="text" class="employee-input" value="${employee.firstName}" 
-                               placeholder="Prénom" id="employee-firstName-${index}" 
-                               ${isAdmin ? 'readonly' : ''} oninput="formatFirstName(this)">
-                        <input type="text" class="employee-input" value="${employee.lastName}" 
-                               placeholder="Nom" id="employee-lastName-${index}" 
-                               ${isAdmin ? 'readonly' : ''} oninput="formatLastName(this)">
-                        <input type="email" class="employee-input" value="${employee.email}" 
-                               placeholder="Email" id="employee-email-${index}" 
-                               ${isAdmin ? 'readonly' : ''} oninput="formatEmail(this)">
-                        ${!isAdmin ? `<button type="button" class="clear-employee-btn" onclick="clearEmployee(${index})">✗</button>` : ''}
-                    </div>
-                    ${inviteSection}
-                `;
-                
-                inputs.appendChild(group);
-            }
-            
-            modal.style.display = 'block';
-        }
-
-        function closeEmployeeModal() {
-            document.getElementById('employeeModal').style.display = 'none';
-        }
-
-        function clearEmployee(index) {
-            if (confirm(`Effacer toutes les données de l'employé ${index + 1} ?`)) {
-                document.getElementById(`employee-firstName-${index}`).value = '';
-                document.getElementById(`employee-lastName-${index}`).value = '';
-                document.getElementById(`employee-email-${index}`).value = '';
-            }
-        }
-
-        // Fonctions de formatage automatique
-        function formatFirstName(input) {
-            let value = input.value;
-            if (value.length > 0) {
-                value = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-                input.value = value;
-            }
-        }
-
-        function formatLastName(input) {
-            input.value = input.value.toUpperCase();
-        }
-
-        function formatEmail(input) {
-            input.value = input.value.toLowerCase();
-        }
-
-        function saveEmployees() {
-            if (userRole !== 'admin') return;
-            
-            const newEmployees = [];
-            for (let i = 0; i < 5; i++) {
-                if (i === 4) {
-                    // Administrateur - ne pas modifier
-                    newEmployees.push(employees[4]);
-                } else {
-                    const firstName = document.getElementById(`employee-firstName-${i}`).value || '';
-                    const lastName = document.getElementById(`employee-lastName-${i}`).value || '';
-                    const email = document.getElementById(`employee-email-${i}`).value || '';
-                    
-                    newEmployees.push({
-                        firstName: firstName,
-                        lastName: lastName,
-                        email: email
-                    });
-                }
-            }
-            
-            employees = newEmployees;
-            updateScheduleDisplay();
-            closeEmployeeModal();
-            
-            saveSchedulesToFirebase().then(success => {
-                if (success) {
-                    alert('Informations des employés sauvegardées !');
-                } else {
-                    alert('Erreur lors de la sauvegarde');
-                }
             });
         }
 
