@@ -1319,7 +1319,33 @@
             return day + month + year;
         }
 
-        // Fonction pour obtenir la version de la semaine courante
+        let weekValidationInfo = {}; // Informations de validation par semaine - format: {"2025-26": {validatedAt: "...", version: {...}}}
+
+        // Fonction pour obtenir les informations de validation de la semaine courante
+        function getCurrentWeekValidationInfo() {
+            const weekKey = `${currentYear}-${currentWeek}`;
+            return weekValidationInfo[weekKey] || null;
+        }
+
+        // Fonction pour mettre à jour le titre du résumé avec les informations de validation
+        function updateSummaryTitle() {
+            const summaryTitle = document.querySelector('.summary h3');
+            const validationInfo = getCurrentWeekValidationInfo();
+            
+            if (validationInfo && validationInfo.validatedAt) {
+                const validatedDate = new Date(validationInfo.validatedAt);
+                const dateStr = validatedDate.toLocaleDateString('fr-FR');
+                const timeStr = validatedDate.toLocaleTimeString('fr-FR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                const version = validationInfo.version ? validationInfo.version.number : 'N/A';
+                
+                summaryTitle.textContent = `Résumé Hebdomadaire (${dateStr} ${timeStr} - v${version})`;
+            } else {
+                summaryTitle.textContent = 'Résumé Hebdomadaire (Non validé)';
+            }
+        }
         function getCurrentWeekVersion() {
             const weekKey = `${currentYear}-${currentWeek}`;
             if (!weekVersions[weekKey]) {
@@ -2166,6 +2192,7 @@ L'équipe LATILLE`;
                 const newVersion = incrementCurrentWeekVersion();
 
                 planningValidated = true;
+                const validatedAt = new Date().toISOString();
 
                 const planningData = {
                     schedule: schedules[weekKey] || {},
@@ -2173,7 +2200,14 @@ L'équipe LATILLE`;
                     version: newVersion,
                     validated: true,
                     validatedBy: currentUser.email,
-                    validatedAt: new Date().toISOString()
+                    validatedAt: validatedAt
+                };
+
+                // Mettre à jour les informations de validation localement
+                weekValidationInfo[weekKey] = {
+                    validatedAt: validatedAt,
+                    version: newVersion,
+                    validatedBy: currentUser.email
                 };
 
                 const { doc, setDoc } = window.firestoreSDK;
@@ -2185,10 +2219,17 @@ L'équipe LATILLE`;
                     lastUpdated: new Date().toISOString()
                 });
 
+                // Sauvegarder les informations de validation
+                await setDoc(doc(window.firestore, 'planning-data', 'week-validation-info'), {
+                    validationInfo: weekValidationInfo,
+                    lastUpdated: new Date().toISOString()
+                });
+
                 await sendPlanningNotifications(weekKey);
 
                 updateUIForRole();
                 updateVersionInfo();
+                updateSummaryTitle(); // Mettre à jour le titre du résumé
                 alert('Planning validé et notifications envoyées !');
 
             } catch (error) {
@@ -2513,6 +2554,12 @@ L'équipe LATILLE`;
                     weekVersions = versionsDoc.data().versions || {};
                 }
 
+                // Charger les informations de validation par semaine
+                const validationInfoDoc = await getDoc(doc(window.firestore, 'planning-data', 'week-validation-info'));
+                if (validationInfoDoc.exists()) {
+                    weekValidationInfo = validationInfoDoc.data().validationInfo || {};
+                }
+
                 const planningCollection = collection(window.firestore, 'planning-data');
                 const snapshot = await getDocs(planningCollection);
                 
@@ -2533,6 +2580,14 @@ L'équipe LATILLE`;
                             // Charger la version spécifique de cette semaine si elle existe
                             if (data.version) {
                                 weekVersions[key] = data.version;
+                            }
+                            // Charger les informations de validation
+                            if (data.validatedAt) {
+                                weekValidationInfo[key] = {
+                                    validatedAt: data.validatedAt,
+                                    version: data.version,
+                                    validatedBy: data.validatedBy
+                                };
                             }
                         }
                     }
@@ -2607,6 +2662,10 @@ L'équipe LATILLE`;
                 activeListeners.weekVersions();
                 delete activeListeners.weekVersions;
             }
+            if (activeListeners.validationInfo) {
+                activeListeners.validationInfo();
+                delete activeListeners.validationInfo;
+            }
 
             // Écouter les changements du planning de la semaine courante
             activeListeners.currentSchedule = onSnapshot(
@@ -2679,8 +2738,18 @@ L'équipe LATILLE`;
                             weekVersions[currentKey] = data.version;
                         }
                         
+                        // Mettre à jour les informations de validation
+                        if (data.validatedAt) {
+                            weekValidationInfo[currentKey] = {
+                                validatedAt: data.validatedAt,
+                                version: data.version,
+                                validatedBy: data.validatedBy
+                            };
+                        }
+                        
                         updateUIForRole();
                         updateVersionInfo();
+                        updateSummaryTitle(); // Mettre à jour le titre du résumé
                         console.log(`🔄 Validation semaine ${currentKey} mise à jour`);
                     }
                 },
@@ -2705,6 +2774,26 @@ L'équipe LATILLE`;
                     }
                 },
                 (error) => console.error('Erreur listener versions:', error)
+            );
+
+            // Écouter les changements des informations de validation
+            activeListeners.validationInfo = onSnapshot(
+                doc(window.firestore, 'planning-data', 'week-validation-info'),
+                (docSnapshot) => {
+                    if (isUpdatingFromFirebase) return;
+                    
+                    if (docSnapshot.exists()) {
+                        const newValidationInfo = docSnapshot.data().validationInfo;
+                        if (JSON.stringify(newValidationInfo) !== JSON.stringify(weekValidationInfo)) {
+                            isUpdatingFromFirebase = true;
+                            weekValidationInfo = newValidationInfo || {};
+                            updateSummaryTitle(); // Mettre à jour le titre du résumé
+                            isUpdatingFromFirebase = false;
+                            console.log('🔄 Informations de validation mises à jour depuis Firebase');
+                        }
+                    }
+                },
+                (error) => console.error('Erreur listener informations validation:', error)
             );
         }
 
@@ -2806,6 +2895,7 @@ L'équipe LATILLE`;
             updateClosureDisplay();
             updateUIForRole();
             updateVersionInfo();
+            updateSummaryTitle(); // Mettre à jour le titre avec les informations de validation
             
             // Mettre à jour les listeners pour la nouvelle semaine (seulement si pas de mise à jour Firebase en cours)
             if (!isUpdatingFromFirebase) {
@@ -2943,6 +3033,9 @@ L'équipe LATILLE`;
             const scheduleKey = `${currentYear}-${currentWeek}`;
             const summaryGrid = document.getElementById('summaryGrid');
             summaryGrid.innerHTML = '';
+            
+            // Mettre à jour le titre avec les informations de validation
+            updateSummaryTitle();
             
             const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
             const employeeTotals = [0, 0, 0, 0, 0];
