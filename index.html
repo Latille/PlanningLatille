@@ -267,40 +267,40 @@
             text-align: center;
         }
 
-        /* Improved Employee Management */
+        /* Improved Employee Management - Version compacte */
         .employee-management {
             background: #f8f9fa;
             border: 1px solid #dee2e6;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 8px;
         }
 
         .employee-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #dee2e6;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #dee2e6;
         }
 
         .employee-title {
             font-weight: bold;
             color: #2c3e50;
-            font-size: 16px;
+            font-size: 14px;
         }
 
         .employee-status {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
         }
 
         .status-badge {
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
             font-weight: bold;
         }
 
@@ -332,32 +332,34 @@
         .employee-details {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 6px;
+            margin-bottom: 8px;
         }
 
         .employee-input {
             width: 100%;
-            padding: 8px;
-            margin: 3px 0;
+            padding: 6px;
+            margin: 0;
             border: 1px solid #ddd;
-            border-radius: 5px;
+            border-radius: 4px;
+            font-size: 13px;
         }
 
         .employee-actions {
             display: flex;
-            gap: 8px;
+            gap: 4px;
             flex-wrap: wrap;
         }
 
         .action-btn {
-            padding: 6px 12px;
+            padding: 4px 8px;
             border: none;
-            border-radius: 4px;
+            border-radius: 3px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 10px;
             font-weight: bold;
             transition: all 0.2s;
+            line-height: 1.2;
         }
 
         .action-btn.create {
@@ -1004,12 +1006,12 @@
 
         .modal-content {
             background-color: white;
-            margin: 5% auto;
-            padding: 20px;
+            margin: 3% auto;
+            padding: 15px;
             border-radius: 10px;
             width: 95%;
             max-width: 1000px;
-            max-height: 85vh;
+            max-height: 90vh;
             overflow-y: auto;
         }
 
@@ -1070,12 +1072,26 @@
             background: #6c757d;
         }
 
+        /* Modal employé optimisé pour la hauteur */
+        #employeeModal .modal-content {
+            margin: 2% auto;
+            padding: 10px 15px;
+            max-height: 95vh;
+        }
+        
+        #employeeModal h2 {
+            margin: 5px 0 10px 0;
+            font-size: 18px;
+        }
+
         .close {
             color: #aaa;
             float: right;
-            font-size: 28px;
+            font-size: 24px;
             font-weight: bold;
             cursor: pointer;
+            line-height: 1;
+            margin: -5px 0 0 0;
         }
 
         .close:hover {
@@ -1281,13 +1297,13 @@
     <!-- Version info -->
     <div class="version-info" id="versionInfo"></div>
 
-    <!-- Modal pour gérer les employés (Amélioré) -->
+    <!-- Modal pour gérer les employés (Version compacte) -->
     <div id="employeeModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeEmployeeModal()">&times;</span>
             <h2>Gestion des Employés</h2>
             <div id="employeeManagement"></div>
-            <div style="text-align: center; margin-top: 20px;">
+            <div style="text-align: center; margin-top: 10px;">
                 <button class="btn btn-save" onclick="saveEmployees()">💾 Sauvegarder les Modifications</button>
             </div>
         </div>
