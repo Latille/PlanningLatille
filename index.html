@@ -229,7 +229,7 @@
             position: fixed;
             bottom: 10px;
             right: 10px;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.5);
             color: white;
             padding: 5px 10px;
             border-radius: 15px;
@@ -915,10 +915,13 @@
         .time-slot.drag-preview {
             border: 2px solid #27ae60;
             opacity: 0.8;
+            box-shadow: 0 2px 4px rgba(39, 174, 96, 0.3);
         }
 
         .time-slot.drag-invalid {
             border: 2px solid #e74c3c;
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .daily-totals {
@@ -1279,7 +1282,7 @@
     </div>
 
     <script>
-        // Variables globales
+        // Variables globales pour le drag & drop
         let currentUser = null;
         let userRole = null;
         let currentWeek = 25;
@@ -1298,11 +1301,176 @@
         let isUpdatingFromFirebase = false;
         let isDragging = false;
         let dragStart = null;
+        let dragEnd = null;
         let dragStartState = null;
         let dragCurrentEmployee = null;
         let dragCurrentDay = null;
+        let draggedSlots = new Set();
         let planningValidated = true;
-        let currentVersion = { number: 1, date: new Date().toLocaleDateString('fr-FR').slice(0, 8) };
+        let weekVersions = {}; // Versions par semaine - format: {"2025-26": {number: 1.2, date: "210625"}}
+        let currentWeekVersion = { number: 1.0, date: getCurrentDateString() };
+
+        // Fonction pour obtenir la date au format correct (DDMMYY avec les 2 derniers chiffres de l'année)
+        function getCurrentDateString() {
+            const now = new Date();
+            const day = now.getDate().toString().padStart(2, '0');
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const year = now.getFullYear().toString().slice(-2); // 2 derniers chiffres
+            return day + month + year;
+        }
+
+        // Fonction pour obtenir la version de la semaine courante
+        function getCurrentWeekVersion() {
+            const weekKey = `${currentYear}-${currentWeek}`;
+            if (!weekVersions[weekKey]) {
+                weekVersions[weekKey] = { 
+                    number: 1.0, 
+                    date: getCurrentDateString() 
+                };
+            }
+            return weekVersions[weekKey];
+        }
+
+        // Fonction pour incrémenter la version de la semaine courante
+        function incrementCurrentWeekVersion() {
+            const weekKey = `${currentYear}-${currentWeek}`;
+            if (!weekVersions[weekKey]) {
+                weekVersions[weekKey] = { 
+                    number: 1.0, 
+                    date: getCurrentDateString() 
+                };
+            }
+            
+            weekVersions[weekKey].number += 0.1;
+            weekVersions[weekKey].number = Math.round(weekVersions[weekKey].number * 10) / 10;
+            weekVersions[weekKey].date = getCurrentDateString();
+            
+            return weekVersions[weekKey];
+        }
+
+        // Fonctions de gestion du drag & drop pour la sélection multiple
+        function startDragSelection(element, dayIndex, slotIndex, empIndex, event) {
+            if (userRole !== 'admin') return;
+            
+            isDragging = true;
+            dragStart = { day: dayIndex, slot: slotIndex, employee: empIndex };
+            dragCurrentEmployee = empIndex;
+            dragCurrentDay = dayIndex;
+            draggedSlots.clear();
+            
+            // Déterminer l'état initial (actif ou inactif)
+            const scheduleKey = `${currentYear}-${currentWeek}`;
+            const isCurrentlyActive = schedules[scheduleKey] && 
+                                    schedules[scheduleKey][dayIndex] && 
+                                    schedules[scheduleKey][dayIndex][slotIndex] && 
+                                    schedules[scheduleKey][dayIndex][slotIndex][empIndex];
+            
+            dragStartState = !isCurrentlyActive; // On basculera vers l'état opposé
+            
+            // Ajouter le slot de départ
+            const slotKey = `${dayIndex}-${slotIndex}-${empIndex}`;
+            draggedSlots.add(slotKey);
+            
+            // Ajouter la classe de preview
+            element.classList.add('drag-preview');
+            
+            // Empêcher la sélection de texte
+            document.body.style.userSelect = 'none';
+            
+            event.preventDefault();
+        }
+
+        function updateDragSelection(element, dayIndex, slotIndex, empIndex) {
+            if (!isDragging || userRole !== 'admin') return;
+            
+            // Ne permettre la sélection que pour le même employé et le même jour
+            if (empIndex !== dragCurrentEmployee || dayIndex !== dragCurrentDay) {
+                element.classList.add('drag-invalid');
+                return;
+            }
+            
+            element.classList.remove('drag-invalid');
+            
+            // Mettre à jour la fin de la sélection
+            dragEnd = { day: dayIndex, slot: slotIndex, employee: empIndex };
+            
+            // Effacer tous les previews précédents
+            document.querySelectorAll('.drag-preview').forEach(slot => {
+                slot.classList.remove('drag-preview');
+            });
+            
+            // Calculer la plage de slots sélectionnés
+            const startSlot = Math.min(dragStart.slot, dragEnd.slot);
+            const endSlot = Math.max(dragStart.slot, dragEnd.slot);
+            
+            // Effacer la liste des slots sélectionnés
+            draggedSlots.clear();
+            
+            // Ajouter tous les slots dans la plage
+            for (let slot = startSlot; slot <= endSlot; slot++) {
+                const slotKey = `${dayIndex}-${slot}-${empIndex}`;
+                draggedSlots.add(slotKey);
+                
+                // Ajouter la classe de preview
+                const slotElement = document.querySelector(`[data-day="${dayIndex}"][data-slot="${slot}"][data-employee="${empIndex}"]`);
+                if (slotElement) {
+                    slotElement.classList.add('drag-preview');
+                }
+            }
+        }
+
+        function endDragSelection() {
+            if (!isDragging || userRole !== 'admin') return;
+            
+            const scheduleKey = `${currentYear}-${currentWeek}`;
+            if (!schedules[scheduleKey]) schedules[scheduleKey] = {};
+            
+            // Appliquer les changements à tous les slots sélectionnés
+            draggedSlots.forEach(slotKey => {
+                const [dayIndex, slotIndex, empIndex] = slotKey.split('-').map(Number);
+                
+                if (!schedules[scheduleKey][dayIndex]) schedules[scheduleKey][dayIndex] = {};
+                if (!schedules[scheduleKey][dayIndex][slotIndex]) schedules[scheduleKey][dayIndex][slotIndex] = {};
+                
+                // Appliquer le nouvel état
+                schedules[scheduleKey][dayIndex][slotIndex][empIndex] = dragStartState;
+                
+                // Mettre à jour l'affichage
+                const element = document.querySelector(`[data-day="${dayIndex}"][data-slot="${slotIndex}"][data-employee="${empIndex}"]`);
+                if (element) {
+                    if (dragStartState) {
+                        element.className = 'time-slot employee-' + (empIndex + 1);
+                    } else {
+                        element.className = 'time-slot';
+                        const defaultClass = getDefaultClass(timeSlots[slotIndex].start, dayIndex);
+                        if (defaultClass) {
+                            element.classList.add(defaultClass);
+                        }
+                    }
+                }
+            });
+            
+            // Nettoyer les classes de preview
+            document.querySelectorAll('.drag-preview, .drag-invalid').forEach(slot => {
+                slot.classList.remove('drag-preview', 'drag-invalid');
+            });
+            
+            // Réinitialiser les variables
+            isDragging = false;
+            dragStart = null;
+            dragEnd = null;
+            dragStartState = null;
+            dragCurrentEmployee = null;
+            dragCurrentDay = null;
+            draggedSlots.clear();
+            
+            // Restaurer la sélection de texte
+            document.body.style.userSelect = '';
+            
+            // Mettre à jour le résumé et sauvegarder
+            updateSummary();
+            saveSchedulesToFirebase();
+        }
 
         // Configuration des créneaux horaires
         const timeSlots = [
@@ -1978,7 +2146,8 @@ L'équipe LATILLE`;
 
         // Fonctions de version et validation
         function updateVersionInfo() {
-            const versionStr = `S${currentWeek}/${currentYear} - ${currentVersion.date} - v${currentVersion.number}`;
+            const weekVersion = getCurrentWeekVersion();
+            const versionStr = `S${currentWeek}/${currentYear} - ${weekVersion.date} - v${weekVersion.number}`;
             document.getElementById('versionInfo').textContent = versionStr;
         }
 
@@ -1993,16 +2162,15 @@ L'équipe LATILLE`;
             try {
                 const weekKey = `${currentYear}-${currentWeek}`;
                 
-                currentVersion.number += 0.1;
-                currentVersion.number = Math.round(currentVersion.number * 10) / 10;
-                currentVersion.date = new Date().toLocaleDateString('fr-FR').slice(0, 8);
+                // Incrémenter la version de la semaine courante
+                const newVersion = incrementCurrentWeekVersion();
 
                 planningValidated = true;
 
                 const planningData = {
                     schedule: schedules[weekKey] || {},
                     closure: closures[weekKey] || {},
-                    version: currentVersion,
+                    version: newVersion,
                     validated: true,
                     validatedBy: currentUser.email,
                     validatedAt: new Date().toISOString()
@@ -2010,6 +2178,12 @@ L'équipe LATILLE`;
 
                 const { doc, setDoc } = window.firestoreSDK;
                 await setDoc(doc(window.firestore, 'planning-data', `validated-${weekKey}`), planningData);
+
+                // Sauvegarder les versions
+                await setDoc(doc(window.firestore, 'planning-data', 'week-versions'), {
+                    versions: weekVersions,
+                    lastUpdated: new Date().toISOString()
+                });
 
                 await sendPlanningNotifications(weekKey);
 
@@ -2070,13 +2244,14 @@ L'équipe LATILLE`;
 
         async function sendPlanningEmail(employee, weekKey, pdfBase64) {
             try {
+                const weekVersion = getCurrentWeekVersion();
                 const message = `Bonjour ${employee.firstName},
 
 Voici le planning validé pour la semaine ${currentWeek}/${currentYear}.
 
 📋 PLANNING SEMAINE ${currentWeek} - ${currentYear}
-Version : ${currentVersion.number}
-Date de validation : ${currentVersion.date}
+Version : ${weekVersion.number}
+Date de validation : ${weekVersion.date}
 
 Le planning est en pièce jointe au format PDF.
 
@@ -2092,7 +2267,7 @@ L'équipe LATILLE`;
                     to_name: employee.firstName,
                     to_email: employee.email,
                     from_name: 'LATILLE Distribution',
-                    subject: `Planning Semaine ${currentWeek}/${currentYear} - Version ${currentVersion.number}`,
+                    subject: `Planning Semaine ${currentWeek}/${currentYear} - Version ${weekVersion.number}`,
                     message: message,
                     planning_url: 'https://latille.github.io/PlanningLatille/',
                     admin_email: 'latilledistribution@gmail.com'
@@ -2128,6 +2303,7 @@ L'équipe LATILLE`;
             const pageHeight = doc.internal.pageSize.getHeight();
             const margin = 10;
             const dates = getWeekDates(currentYear, currentWeek);
+            const weekVersion = getCurrentWeekVersion();
 
             doc.setFontSize(16);
             doc.setFont(undefined, 'bold');
@@ -2140,7 +2316,7 @@ L'équipe LATILLE`;
             doc.text(`Du ${dates[0].toLocaleDateString('fr-FR')} au ${dates[6].toLocaleDateString('fr-FR')}`, pageWidth / 2, 35, { align: 'center' });
 
             doc.setFontSize(8);
-            const versionStr = `S${currentWeek}/${currentYear} - ${currentVersion.date} - v${currentVersion.number}`;
+            const versionStr = `S${currentWeek}/${currentYear} - ${weekVersion.date} - v${weekVersion.number}`;
             doc.text(versionStr, pageWidth - margin, pageHeight - 5, { align: 'right' });
 
             const tableData = [];
@@ -2287,6 +2463,12 @@ L'équipe LATILLE`;
                     lastUpdated: new Date().toISOString()
                 });
 
+                // Sauvegarder les versions par semaine
+                await setDoc(doc(window.firestore, 'planning-data', 'week-versions'), {
+                    versions: weekVersions,
+                    lastUpdated: new Date().toISOString()
+                });
+
                 for (const [key, schedule] of Object.entries(schedules)) {
                     await setDoc(doc(window.firestore, 'planning-data', `schedule-${key}`), {
                         schedule: schedule,
@@ -2325,6 +2507,12 @@ L'équipe LATILLE`;
                     employees = employeesDoc.data().employees || employees;
                 }
 
+                // Charger les versions par semaine
+                const versionsDoc = await getDoc(doc(window.firestore, 'planning-data', 'week-versions'));
+                if (versionsDoc.exists()) {
+                    weekVersions = versionsDoc.data().versions || {};
+                }
+
                 const planningCollection = collection(window.firestore, 'planning-data');
                 const snapshot = await getDocs(planningCollection);
                 
@@ -2342,7 +2530,10 @@ L'équipe LATILLE`;
                         const key = docId.replace('validated-', '');
                         if (key === `${currentYear}-${currentWeek}`) {
                             planningValidated = data.validated || false;
-                            currentVersion = data.version || currentVersion;
+                            // Charger la version spécifique de cette semaine si elle existe
+                            if (data.version) {
+                                weekVersions[key] = data.version;
+                            }
                         }
                     }
                 });
@@ -2412,6 +2603,10 @@ L'équipe LATILLE`;
                 activeListeners.currentValidated();
                 delete activeListeners.currentValidated;
             }
+            if (activeListeners.weekVersions) {
+                activeListeners.weekVersions();
+                delete activeListeners.weekVersions;
+            }
 
             // Écouter les changements du planning de la semaine courante
             activeListeners.currentSchedule = onSnapshot(
@@ -2478,13 +2673,38 @@ L'équipe LATILLE`;
                     if (docSnapshot.exists()) {
                         const data = docSnapshot.data();
                         planningValidated = data.validated || false;
-                        currentVersion = data.version || currentVersion;
+                        
+                        // Mettre à jour la version spécifique de cette semaine
+                        if (data.version) {
+                            weekVersions[currentKey] = data.version;
+                        }
+                        
                         updateUIForRole();
                         updateVersionInfo();
                         console.log(`🔄 Validation semaine ${currentKey} mise à jour`);
                     }
                 },
                 (error) => console.error('Erreur listener validation:', error)
+            );
+
+            // Écouter les changements des versions par semaine
+            activeListeners.weekVersions = onSnapshot(
+                doc(window.firestore, 'planning-data', 'week-versions'),
+                (docSnapshot) => {
+                    if (isUpdatingFromFirebase) return;
+                    
+                    if (docSnapshot.exists()) {
+                        const newVersions = docSnapshot.data().versions;
+                        if (JSON.stringify(newVersions) !== JSON.stringify(weekVersions)) {
+                            isUpdatingFromFirebase = true;
+                            weekVersions = newVersions || {};
+                            updateVersionInfo();
+                            isUpdatingFromFirebase = false;
+                            console.log('🔄 Versions par semaine mises à jour depuis Firebase');
+                        }
+                    }
+                },
+                (error) => console.error('Erreur listener versions:', error)
             );
         }
 
@@ -2629,8 +2849,39 @@ L'équipe LATILLE`;
                         }
                         
                         if (userRole === 'admin') {
-                            timeSlotDiv.addEventListener('click', (e) => {
-                                toggleTimeSlot(timeSlotDiv, dayIndex, slotIndex, empIndex);
+                            let mouseDownTime = 0;
+                            let hasMoved = false;
+                            
+                            // Gestion des événements pour le drag & drop
+                            timeSlotDiv.addEventListener('mousedown', (e) => {
+                                e.preventDefault();
+                                mouseDownTime = Date.now();
+                                hasMoved = false;
+                                startDragSelection(timeSlotDiv, dayIndex, slotIndex, empIndex, e);
+                            });
+                            
+                            timeSlotDiv.addEventListener('mouseenter', (e) => {
+                                if (isDragging) {
+                                    hasMoved = true;
+                                    updateDragSelection(timeSlotDiv, dayIndex, slotIndex, empIndex);
+                                }
+                            });
+                            
+                            timeSlotDiv.addEventListener('mouseup', (e) => {
+                                const clickDuration = Date.now() - mouseDownTime;
+                                // Si c'est un clic rapide sans mouvement, considérer comme un clic simple
+                                if (!hasMoved && clickDuration < 200) {
+                                    // Annuler le drag
+                                    document.querySelectorAll('.drag-preview, .drag-invalid').forEach(slot => {
+                                        slot.classList.remove('drag-preview', 'drag-invalid');
+                                    });
+                                    isDragging = false;
+                                    draggedSlots.clear();
+                                    document.body.style.userSelect = '';
+                                    
+                                    // Exécuter le toggle normal
+                                    toggleTimeSlot(timeSlotDiv, dayIndex, slotIndex, empIndex);
+                                }
                             });
                         }
                         
@@ -3231,6 +3482,27 @@ L'équipe LATILLE`;
             }
         });
 
+        // Événements globaux pour le drag & drop
+        document.addEventListener('mouseup', (event) => {
+            if (isDragging) {
+                endDragSelection();
+            }
+        });
+
+        document.addEventListener('mousemove', (event) => {
+            if (isDragging) {
+                // Empêcher le comportement par défaut pendant le drag
+                event.preventDefault();
+            }
+        });
+
+        // Empêcher le menu contextuel pendant le drag
+        document.addEventListener('contextmenu', (event) => {
+            if (isDragging) {
+                event.preventDefault();
+            }
+        });
+
         document.addEventListener('click', function(event) {
             const dropdown = document.querySelector('.dropdown');
             if (!dropdown.contains(event.target)) {
@@ -3246,6 +3518,25 @@ L'équipe LATILLE`;
                 } else if (document.getElementById('passwordModal').style.display === 'block') {
                     changePassword();
                 }
+            }
+        });
+
+        // Gestion de la touche Escape pour annuler le drag
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && isDragging) {
+                // Annuler le drag sans appliquer les changements
+                document.querySelectorAll('.drag-preview, .drag-invalid').forEach(slot => {
+                    slot.classList.remove('drag-preview', 'drag-invalid');
+                });
+                
+                isDragging = false;
+                dragStart = null;
+                dragEnd = null;
+                dragStartState = null;
+                dragCurrentEmployee = null;
+                dragCurrentDay = null;
+                draggedSlots.clear();
+                document.body.style.userSelect = '';
             }
         });
     </script>
