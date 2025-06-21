@@ -30,6 +30,14 @@
             storageBucket: "planning-latille.firebasestorage.app",
             messagingSenderId: "363904305106",
             appId: "1:363904305106:web:ecb94628d4eaaa25a72a0b"
+        }
+
+        // Autres fonctions
+        function openPrintableVersion() {
+            generatePlanningPDF(`${currentYear}-${currentWeek}`).then(blob => {
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            });
         };
 
         // Initialiser Firebase
@@ -403,6 +411,11 @@
         .read-only .btn-employees,
         .read-only .dropdown {
             display: none !important;
+        }
+
+        /* Le bouton email reste visible pour tous les utilisateurs */
+        .read-only .btn-email {
+            display: inline-block !important;
         }
 
         .access-denied {
@@ -1000,6 +1013,63 @@
             overflow-y: auto;
         }
 
+        /* Email Modal Styles */
+        .email-recipient {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+
+        .email-recipient label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .email-recipient input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .recipient-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .recipient-details {
+            flex: 1;
+        }
+
+        .recipient-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .recipient-email {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .recipient-status {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background: #28a745;
+            color: white;
+        }
+
+        .recipient-status.no-email {
+            background: #6c757d;
+        }
+
         .close {
             color: #aaa;
             float: right;
@@ -1255,7 +1325,37 @@
         </div>
     </div>
 
-    <!-- Modal pour réinitialiser un planning -->
+    <!-- Modal pour sélectionner les destinataires (Admin) -->
+    <div id="emailModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEmailModal()">&times;</span>
+            <h2>Envoyer le Planning par Email</h2>
+            <div style="margin: 20px 0;">
+                <h3>Sélectionnez les destinataires :</h3>
+                <div id="emailRecipients" style="margin: 15px 0;">
+                    <!-- Les destinataires seront générés dynamiquement -->
+                </div>
+                
+                <div style="margin: 15px 0;">
+                    <label>
+                        <input type="checkbox" id="selectAllEmployees" onchange="toggleAllEmployees()">
+                        <strong>Sélectionner tous les employés</strong>
+                    </label>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <strong>📋 Planning à envoyer :</strong><br>
+                    Semaine <span id="emailWeekInfo"></span><br>
+                    <span id="emailVersionInfo"></span>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <button class="btn btn-email" onclick="sendPlanningToSelected()" id="sendEmailBtn" disabled>
+                    📧 Envoyer le Planning
+                </button>
+            </div>
+        </div>
+    </div>
     <div id="resetModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeResetModal()">&times;</span>
@@ -3401,19 +3501,315 @@ L'équipe LATILLE`;
             }
         }
 
-        // Autres fonctions
-        function openPrintableVersion() {
-            generatePlanningPDF(`${currentYear}-${currentWeek}`).then(blob => {
-                const url = URL.createObjectURL(blob);
-                window.open(url, '_blank');
-            });
+        // Fonctions d'envoi d'email améliorées
+        async function sendByEmail() {
+            if (userRole === 'admin') {
+                // Administrateur : ouvrir la modal de sélection des destinataires
+                openEmailModal();
+            } else {
+                // Utilisateur : s'envoyer le planning à lui-même
+                await sendPlanningToUser();
+            }
         }
 
-        function sendByEmail() {
-            const subject = `Planning Semaine ${currentWeek} - ${currentYear}`;
-            const body = `Planning de la semaine ${currentWeek} de l'année ${currentYear}`;
-            const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-            window.open(mailtoLink);
+        function openEmailModal() {
+            if (userRole !== 'admin') return;
+            
+            const modal = document.getElementById('emailModal');
+            const recipientsContainer = document.getElementById('emailRecipients');
+            const weekVersion = getCurrentWeekVersion();
+            
+            // Mettre à jour les informations du planning
+            document.getElementById('emailWeekInfo').textContent = `${currentWeek}/${currentYear}`;
+            document.getElementById('emailVersionInfo').textContent = `Version ${weekVersion.number} - ${weekVersion.date}`;
+            
+            // Générer la liste des destinataires
+            recipientsContainer.innerHTML = '';
+            
+            employees.forEach((employee, index) => {
+                // Ignorer les employés sans email
+                if (!employee.email) return;
+                
+                const recipientDiv = document.createElement('div');
+                recipientDiv.className = 'email-recipient';
+                
+                const hasValidEmail = employee.email && employee.email.includes('@');
+                const statusText = hasValidEmail ? 'Email valide' : 'Pas d\'email';
+                const statusClass = hasValidEmail ? '' : 'no-email';
+                
+                recipientDiv.innerHTML = `
+                    <label>
+                        <input type="checkbox" value="${index}" onchange="updateSendButton()" ${!hasValidEmail ? 'disabled' : ''}>
+                        <div class="recipient-info">
+                            <div class="recipient-details">
+                                <div class="recipient-name">${employee.firstName} ${employee.lastName}</div>
+                                <div class="recipient-email">${employee.email}</div>
+                            </div>
+                            <div class="recipient-status ${statusClass}">${statusText}</div>
+                        </div>
+                    </label>
+                `;
+                
+                recipientsContainer.appendChild(recipientDiv);
+            });
+            
+            // Réinitialiser les sélections
+            document.getElementById('selectAllEmployees').checked = false;
+            updateSendButton();
+            
+            modal.style.display = 'block';
+        }
+
+        function closeEmailModal() {
+            document.getElementById('emailModal').style.display = 'none';
+        }
+
+        function toggleAllEmployees() {
+            const selectAll = document.getElementById('selectAllEmployees').checked;
+            const checkboxes = document.querySelectorAll('#emailRecipients input[type="checkbox"]:not([disabled])');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll;
+            });
+            
+            updateSendButton();
+        }
+
+        function updateSendButton() {
+            const checkboxes = document.querySelectorAll('#emailRecipients input[type="checkbox"]:checked');
+            const sendBtn = document.getElementById('sendEmailBtn');
+            
+            if (checkboxes.length > 0) {
+                sendBtn.disabled = false;
+                sendBtn.textContent = `📧 Envoyer le Planning (${checkboxes.length} destinataire${checkboxes.length > 1 ? 's' : ''})`;
+            } else {
+                sendBtn.disabled = true;
+                sendBtn.textContent = '📧 Envoyer le Planning';
+            }
+        }
+
+        async function sendPlanningToSelected() {
+            if (userRole !== 'admin') return;
+            
+            const selectedCheckboxes = document.querySelectorAll('#emailRecipients input[type="checkbox"]:checked');
+            
+            if (selectedCheckboxes.length === 0) {
+                alert('Veuillez sélectionner au moins un destinataire.');
+                return;
+            }
+            
+            try {
+                // Générer le PDF du planning
+                const weekKey = `${currentYear}-${currentWeek}`;
+                const pdfBlob = await generatePlanningPDF(weekKey);
+                const pdfBase64 = await blobToBase64(pdfBlob);
+                
+                // Envoyer à chaque destinataire sélectionné
+                const selectedEmployees = [];
+                selectedCheckboxes.forEach(checkbox => {
+                    const employeeIndex = parseInt(checkbox.value);
+                    selectedEmployees.push(employees[employeeIndex]);
+                });
+                
+                let successCount = 0;
+                let errorCount = 0;
+                
+                for (const employee of selectedEmployees) {
+                    try {
+                        await sendPlanningEmailToEmployee(employee, weekKey, pdfBase64);
+                        successCount++;
+                    } catch (error) {
+                        console.error(`Erreur envoi à ${employee.email}:`, error);
+                        errorCount++;
+                    }
+                }
+                
+                closeEmailModal();
+                
+                if (errorCount === 0) {
+                    alert(`✅ Planning envoyé avec succès à ${successCount} destinataire${successCount > 1 ? 's' : ''} !`);
+                } else {
+                    alert(`⚠️ Planning envoyé à ${successCount} destinataire${successCount > 1 ? 's' : ''}, ${errorCount} erreur${errorCount > 1 ? 's' : ''}.`);
+                }
+                
+            } catch (error) {
+                console.error('Erreur génération PDF:', error);
+                alert('Erreur lors de la génération du PDF.');
+            }
+        }
+
+        async function sendPlanningToUser() {
+            if (userRole === 'admin') return;
+            
+            // Trouver l'employé correspondant à l'utilisateur connecté
+            const userEmployee = employees.find(emp => emp.email === currentUser.email);
+            
+            if (!userEmployee) {
+                alert('Impossible de trouver vos informations d\'employé.');
+                return;
+            }
+            
+            if (!confirm(`Vous envoyer le planning de la semaine ${currentWeek}/${currentYear} à votre adresse email ?\n\n📧 ${currentUser.email}`)) {
+                return;
+            }
+            
+            try {
+                // Générer le PDF du planning
+                const weekKey = `${currentYear}-${currentWeek}`;
+                const pdfBlob = await generatePlanningPDF(weekKey);
+                const pdfBase64 = await blobToBase64(pdfBlob);
+                
+                // Envoyer à l'utilisateur
+                await sendPlanningEmailToEmployee(userEmployee, weekKey, pdfBase64);
+                
+                alert('✅ Planning envoyé avec succès à votre adresse email !');
+                
+            } catch (error) {
+                console.error('Erreur envoi planning utilisateur:', error);
+                alert('Erreur lors de l\'envoi du planning.');
+            }
+        }
+
+        async function sendPlanningEmailToEmployee(employee, weekKey, pdfBase64) {
+            try {
+                const weekVersion = getCurrentWeekVersion();
+                
+                // Générer un tableau HTML du planning au lieu d'une image
+                const planningTableHTML = generatePlanningTableHTML(weekKey);
+                
+                const message = `Bonjour ${employee.firstName},
+
+Voici le planning pour la semaine ${currentWeek}/${currentYear}.
+
+📋 PLANNING SEMAINE ${currentWeek} - ${currentYear}
+Version : ${weekVersion.number}
+Date de génération : ${weekVersion.date}
+
+Le planning est affiché ci-dessous et disponible en ligne.
+
+🌐 ACCÈS EN LIGNE :
+Consultez vos plannings sur : https://latille.github.io/PlanningLatille/
+
+Si vous avez des questions, contactez l'administrateur.
+
+Cordialement,
+L'équipe LATILLE`;
+
+                const templateParams = {
+                    to_name: employee.firstName,
+                    to_email: employee.email,
+                    from_name: 'LATILLE Distribution',
+                    subject: `Planning Semaine ${currentWeek}/${currentYear} - Version ${weekVersion.number}`,
+                    message: message,
+                    planning_url: 'https://latille.github.io/PlanningLatille/',
+                    admin_email: 'latilledistribution@gmail.com',
+                    planning_table: planningTableHTML,
+                    week_info: `Semaine ${currentWeek}/${currentYear} - Version ${weekVersion.number}`
+                };
+
+                await emailjs.send('service_jaocvbq', 'template_6y2uwsn', templateParams);
+                console.log(`Email planning envoyé à ${employee.email}`);
+
+            } catch (error) {
+                console.error(`Erreur envoi email planning à ${employee.email}:`, error);
+                throw error;
+            }
+        }
+
+        // Générer un tableau HTML compact du planning pour l'email
+        function generatePlanningTableHTML(weekKey) {
+            try {
+                const dates = getWeekDates(currentYear, currentWeek);
+                const dayNames = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+                
+                let html = `
+                <table style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; margin: 10px 0;">
+                    <thead>
+                        <tr style="background-color: #2c3e50; color: white;">
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Horaires</th>`;
+                
+                // En-têtes des jours avec dates
+                dayNames.forEach((day, index) => {
+                    html += `<th style="border: 1px solid #ddd; padding: 8px; text-align: center;">
+                        ${day}<br><small>${dates[index].toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</small>
+                    </th>`;
+                });
+                
+                html += `</tr></thead><tbody>`;
+                
+                // Ligne des employés
+                html += `<tr style="background-color: #ecf0f1; font-weight: bold;">
+                    <td style="border: 1px solid #ddd; padding: 6px; text-align: center;">Équipe</td>`;
+                
+                for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+                    const employeeNames = employees.map(emp => emp.firstName).join(' - ');
+                    html += `<td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 9px;">${employeeNames}</td>`;
+                }
+                html += `</tr>`;
+                
+                // Créneaux principaux seulement (pour réduire la taille)
+                const mainSlots = timeSlots.filter((slot, index) => 
+                    index % 2 === 0 || // Prendre 1 créneau sur 2
+                    slot.start === '12:00' || // Heure de déjeuner
+                    slot.start === '19:00'    // Fermeture
+                ).slice(0, 12); // Limiter à 12 créneaux max
+                
+                mainSlots.forEach((slot, slotIndex) => {
+                    const originalSlotIndex = timeSlots.findIndex(s => s.start === slot.start);
+                    const bgColor = slotIndex % 2 === 0 ? '#f7f7f7' : '#ffffff';
+                    
+                    html += `<tr style="background-color: ${bgColor};">
+                        <td style="border: 1px solid #ddd; padding: 4px; text-align: center; font-weight: bold;">${slot.start}-${slot.end}</td>`;
+                    
+                    for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+                        let cellContent = '';
+                        let cellStyle = 'border: 1px solid #ddd; padding: 4px; text-align: center; font-size: 9px;';
+                        
+                        if (isSlotClosed(dayIndex, originalSlotIndex)) {
+                            cellContent = 'FERMÉ';
+                            cellStyle += ' background-color: #ffebee; color: #c62828; font-weight: bold;';
+                        } else {
+                            const assignedEmployees = [];
+                            employees.forEach((employee, empIndex) => {
+                                if (schedules[weekKey] && 
+                                    schedules[weekKey][dayIndex] && 
+                                    schedules[weekKey][dayIndex][originalSlotIndex] && 
+                                    schedules[weekKey][dayIndex][originalSlotIndex][empIndex]) {
+                                    assignedEmployees.push(employee.firstName);
+                                }
+                            });
+                            
+                            if (assignedEmployees.length > 0) {
+                                cellContent = assignedEmployees.join(' ');
+                                cellStyle += ' background-color: #e8f5e8; color: #2e7d32; font-weight: bold;';
+                            } else {
+                                cellContent = '-';
+                                cellStyle += ' color: #999;';
+                            }
+                        }
+                        
+                        html += `<td style="${cellStyle}">${cellContent}</td>`;
+                    }
+                    html += `</tr>`;
+                });
+                
+                html += `</tbody></table>`;
+                
+                // Ajouter une note
+                html += `<p style="font-size: 10px; color: #666; margin: 10px 0;">
+                    📝 <strong>Note :</strong> Planning simplifié pour l'email. 
+                    Consultez la version complète en ligne pour tous les détails.
+                </p>`;
+                
+                return html;
+                
+            } catch (error) {
+                console.error('Erreur génération tableau planning:', error);
+                return `<div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 5px;">
+                    <p><strong>Planning non disponible</strong></p>
+                    <p>Consultez le planning complet en ligne</p>
+                </div>`;
+            }
         }
 
         function toggleDayClosure(dayIndex) {
@@ -3566,12 +3962,16 @@ L'équipe LATILLE`;
         window.addEventListener('click', (event) => {
             const employeeModal = document.getElementById('employeeModal');
             const passwordModal = document.getElementById('passwordModal');
+            const emailModal = document.getElementById('emailModal');
             
             if (event.target === employeeModal) {
                 closeEmployeeModal();
             }
             if (event.target === passwordModal && !mustChangePassword) {
                 closePasswordModal();
+            }
+            if (event.target === emailModal) {
+                closeEmailModal();
             }
         });
 
