@@ -197,30 +197,38 @@
             background: #5a6268;
         }
 
-        /* Validation section */
+        /* Validation section - Version compacte */
         .validation-section {
             background: #fff3cd;
             border: 1px solid #ffeaa7;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
+            padding: 8px 15px;
+            border-radius: 6px;
+            margin: 10px 0;
             text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 40px;
         }
 
         .validation-info {
-            margin-bottom: 10px;
-            font-size: 14px;
+            margin: 0;
+            font-size: 13px;
+            flex: 1;
+            text-align: left;
         }
 
         .validate-btn {
             background: #28a745;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 6px 15px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
+            margin-left: 15px;
+            white-space: nowrap;
         }
 
         .validate-btn:hover {
@@ -314,6 +322,11 @@
             color: white;
         }
 
+        .status-badge.super-admin {
+            background: #6f42c1;
+            color: white;
+        }
+
         .status-badge.no-account {
             background: #6c757d;
             color: white;
@@ -396,6 +409,18 @@
             background: #6c757d;
             cursor: not-allowed;
             opacity: 0.5;
+        }
+
+        /* Admin protection notice */
+        .admin-protection {
+            background: #e8f4f8;
+            border: 1px solid #b3d9e6;
+            padding: 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #0c5460;
+            text-align: center;
+            margin-top: 4px;
         }
 
         /* Read-only styling */
@@ -1189,8 +1214,7 @@
 
             <div id="validationSection" class="validation-section" style="display: none;">
                 <div class="validation-info">
-                    <strong>🔄 Planning modifié</strong><br>
-                    Ce planning a été modifié et n'est pas encore validé.
+                    <strong>🔄 Planning modifié</strong> - Ce planning a été modifié et n'est pas encore validé.
                 </div>
                 <button class="validate-btn" onclick="validatePlanning()">✅ Valider et Notifier</button>
             </div>
@@ -1297,11 +1321,18 @@
     <!-- Version info -->
     <div class="version-info" id="versionInfo"></div>
 
-    <!-- Modal pour gérer les employés (Version compacte) -->
+    <!-- Modal pour gérer les employés (Version améliorée) -->
     <div id="employeeModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeEmployeeModal()">&times;</span>
-            <h2>Gestion des Employés</h2>
+            <h2>Gestion des Employés et Administrateurs</h2>
+            <div style="background: #e8f4f8; border: 1px solid #b3d9e6; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 13px;">
+                <strong>💡 Gestion des administrateurs :</strong><br>
+                • L'administrateur principal (LATILLE) ne peut pas être modifié<br>
+                • Vous pouvez promouvoir d'autres employés comme administrateurs<br>
+                • Les administrateurs secondaires peuvent être rétrogradés<br>
+                • Tous les administrateurs ont les mêmes droits de gestion
+            </div>
             <div id="employeeManagement"></div>
             <div style="text-align: center; margin-top: 10px;">
                 <button class="btn btn-save" onclick="saveEmployees()">💾 Sauvegarder les Modifications</button>
@@ -1422,7 +1453,11 @@
         let dragCurrentEmployee = null;
         let dragCurrentDay = null;
         let draggedSlots = new Set();
-        let planningValidated = true;
+        
+        // Gestion des modifications et validation par semaine
+        let weekModifications = {}; // Format: {"2025-26": true/false}
+        let weekValidations = {}; // Format: {"2025-26": true/false}
+        
         let weekVersions = {}; // Versions par semaine - format: {"2025-26": {number: 1.2, date: "210625"}}
         let currentWeekVersion = { number: 1.0, date: getCurrentDateString() };
 
@@ -1441,6 +1476,117 @@
         function getCurrentWeekValidationInfo() {
             const weekKey = `${currentYear}-${currentWeek}`;
             return weekValidationInfo[weekKey] || null;
+        }
+
+        // Fonction pour mettre à jour le titre du résumé avec les informations de validation
+        // Fonctions pour gérer les modifications par semaine
+        function getCurrentWeekKey() {
+            return `${currentYear}-${currentWeek}`;
+        }
+
+        function isCurrentWeekModified() {
+            const weekKey = getCurrentWeekKey();
+            return weekModifications[weekKey] === true;
+        }
+
+        function isCurrentWeekValidated() {
+            const weekKey = getCurrentWeekKey();
+            return weekValidations[weekKey] === true;
+        }
+
+        function markCurrentWeekAsModified() {
+            if (userRole === 'admin' && !isUpdatingFromFirebase) {
+                const weekKey = getCurrentWeekKey();
+                weekModifications[weekKey] = true;
+                weekValidations[weekKey] = false; // Si modifié, alors plus validé
+                
+                console.log(`Semaine ${weekKey} marquée comme modifiée`);
+                
+                // Sauvegarder immédiatement dans Firebase
+                saveModificationStates();
+                updateValidationDisplay();
+            }
+        }
+
+        function markCurrentWeekAsValidated() {
+            const weekKey = getCurrentWeekKey();
+            weekModifications[weekKey] = false;
+            weekValidations[weekKey] = true;
+            
+            // Sauvegarder immédiatement dans Firebase
+            saveModificationStates();
+            updateValidationDisplay();
+        }
+
+        // Fonction pour sauvegarder les états de modification
+        async function saveModificationStates() {
+            if (!window.firebaseReady || !window.firestoreSDK) return;
+            
+            try {
+                const { doc, setDoc } = window.firestoreSDK;
+                await setDoc(doc(window.firestore, 'planning-data', 'week-modifications'), {
+                    modifications: weekModifications,
+                    validations: weekValidations,
+                    lastUpdated: new Date().toISOString()
+                });
+                console.log('États de modification sauvegardés');
+            } catch (error) {
+                console.error('Erreur sauvegarde états modification:', error);
+            }
+        }
+
+        // Fonction pour charger les états de modification pour la semaine courante
+        async function loadCurrentWeekStates() {
+            if (!window.firebaseReady || !window.firestoreSDK) {
+                console.log('Firebase non prêt, impossible de charger les états');
+                return;
+            }
+            
+            const weekKey = getCurrentWeekKey();
+            console.log(`Chargement des états pour la semaine: ${weekKey}`);
+            
+            try {
+                const { doc, getDoc } = window.firestoreSDK;
+                const modificationsDoc = await getDoc(doc(window.firestore, 'planning-data', 'week-modifications'));
+                
+                if (modificationsDoc.exists()) {
+                    const data = modificationsDoc.data();
+                    weekModifications = data.modifications || {};
+                    weekValidations = data.validations || {};
+                    
+                    console.log(`États chargés - Modifié: ${weekModifications[weekKey]}, Validé: ${weekValidations[weekKey]}`);
+                } else {
+                    console.log('Aucun document d\'états trouvé dans Firebase');
+                }
+                
+                // Mettre à jour l'affichage après chargement
+                setTimeout(() => {
+                    updateValidationDisplay();
+                }, 50);
+                
+            } catch (error) {
+                console.error('Erreur chargement états modification:', error);
+            }
+        }
+
+        function updateValidationDisplay() {
+            const validationSection = document.getElementById('validationSection');
+            const isAdmin = userRole === 'admin';
+            const isModified = isCurrentWeekModified();
+            const isValidated = isCurrentWeekValidated();
+            const weekKey = getCurrentWeekKey();
+            
+            // Log de débogage
+            console.log(`Validation Display - Semaine: ${weekKey}`);
+            console.log(`Admin: ${isAdmin}, Modifié: ${isModified}, Validé: ${isValidated}`);
+            console.log('État modifications:', weekModifications);
+            console.log('État validations:', weekValidations);
+            
+            // Afficher seulement si : admin ET (modifié ET non validé)
+            const shouldShow = isAdmin && isModified && !isValidated;
+            validationSection.style.display = shouldShow ? 'flex' : 'none';
+            
+            console.log(`Bandeau affiché: ${shouldShow}`);
         }
 
         // Fonction pour mettre à jour le titre du résumé avec les informations de validation
@@ -1859,13 +2005,28 @@
                     document.body.classList.remove('read-only');
                 }
 
-                document.getElementById('validationSection').style.display = 
-                    (isAdmin && !planningValidated) ? 'block' : 'none';
+                // Utiliser le nouveau système de validation par semaine
+                updateValidationDisplay();
             }
 
+            // Mise à jour améliorée de l'affichage du rôle
             document.getElementById('userEmail').textContent = currentUser.email;
-            document.getElementById('userRole').textContent = isAdmin ? 'Administrateur' : 'Utilisateur';
-            document.getElementById('userRole').className = `user-role ${isAdmin ? 'admin' : ''}`;
+            const userRoleElement = document.getElementById('userRole');
+            
+            if (isAdmin) {
+                // Vérifier si c'est l'administrateur principal
+                const isPrimaryAdmin = currentUser.email === 'latilledistribution@gmail.com';
+                if (isPrimaryAdmin) {
+                    userRoleElement.textContent = 'Super Admin';
+                    userRoleElement.className = 'user-role admin';
+                } else {
+                    userRoleElement.textContent = 'Administrateur';
+                    userRoleElement.className = 'user-role admin';
+                }
+            } else {
+                userRoleElement.textContent = 'Utilisateur';
+                userRoleElement.className = 'user-role';
+            }
         }
 
         // Gestion améliorée des employés
@@ -1893,6 +2054,11 @@
                     employees[i].accountStatus = await getEmployeeAccountStatus(employees[i].email);
                 }
             }
+        }
+
+        // Fonction pour vérifier si un employé est l'administrateur principal
+        function isPrimaryAdmin(index) {
+            return index === 4 && employees[index].email === 'latilledistribution@gmail.com';
         }
 
         // Fonction pour générer un mot de passe temporaire
@@ -2000,6 +2166,11 @@
             const employee = employees[employeeIndex];
             if (!employee.email) return;
 
+            if (isPrimaryAdmin(employeeIndex)) {
+                alert('⚠️ Impossible de supprimer l\'accès de l\'administrateur principal.');
+                return;
+            }
+
             if (!confirm(`Supprimer l'accès de ${employee.firstName} ?\n\nCela supprimera son compte utilisateur mais conservera ses informations personnelles.`)) {
                 return;
             }
@@ -2021,12 +2192,19 @@
             }
         }
 
-        // Fonction pour changer le rôle d'un employé
+        // Fonction améliorée pour changer le rôle d'un employé
         async function changeEmployeeRole(employeeIndex, newRole) {
             const employee = employees[employeeIndex];
-            const roleName = newRole === 'admin' ? 'Administrateur' : 'Utilisateur';
             
-            if (!confirm(`Changer le rôle de ${employee.firstName} vers ${roleName} ?`)) {
+            if (isPrimaryAdmin(employeeIndex)) {
+                alert('⚠️ Impossible de modifier le rôle de l\'administrateur principal.');
+                return;
+            }
+
+            const roleName = newRole === 'admin' ? 'Administrateur' : 'Utilisateur';
+            const currentRoleName = employee.role === 'admin' ? 'Administrateur' : 'Utilisateur';
+            
+            if (!confirm(`Changer le rôle de ${employee.firstName} de ${currentRoleName} vers ${roleName} ?`)) {
                 return;
             }
 
@@ -2131,9 +2309,12 @@ L'équipe LATILLE`;
             }
         }
 
-        // Modal employé améliorée
+        // Modal employé améliorée pour la gestion des administrateurs multiples
         async function openEmployeeModal() {
-            if (userRole !== 'admin') return;
+            if (userRole !== 'admin') {
+                alert('⚠️ Accès refusé : Vous devez être administrateur pour gérer les employés.');
+                return;
+            }
             
             await updateEmployeeAccountStatuses();
             
@@ -2143,12 +2324,12 @@ L'équipe LATILLE`;
             
             for (let index = 0; index < employees.length; index++) {
                 const employee = employees[index];
-                const isAdmin = index === 4;
+                const isPrimary = isPrimaryAdmin(index);
                 
                 const employeeDiv = document.createElement('div');
                 employeeDiv.className = 'employee-management';
                 
-                // Statut badge
+                // Statut badge amélioré
                 let statusClass = 'no-account';
                 let statusText = 'Pas de compte';
                 
@@ -2168,16 +2349,27 @@ L'équipe LATILLE`;
                         break;
                 }
                 
-                // Actions disponibles
+                // Badge de rôle avec distinction super admin
+                let roleClass = employee.role || 'user';
+                let roleText = (employee.role === 'admin') ? 'Admin' : 'User';
+                
+                if (isPrimary) {
+                    roleClass = 'super-admin';
+                    roleText = 'Super Admin';
+                }
+                
+                // Actions disponibles (améliorées et toujours visibles)
                 let actionsHTML = '';
-                if (!isAdmin) {
+                
+                // Section gestion de compte
+                if (!isPrimary) {
                     if (employee.accountStatus === 'no-account') {
-                        actionsHTML = `
+                        actionsHTML += `
                             <button class="action-btn create" onclick="createEmployeeAccount(${index})" ${!employee.email ? 'disabled' : ''}>
                                 👤 Créer compte
                             </button>`;
                     } else {
-                        actionsHTML = `
+                        actionsHTML += `
                             <button class="action-btn reset" onclick="resetEmployeePassword(${index})">
                                 🔄 Réinitialiser MDP
                             </button>
@@ -2185,43 +2377,69 @@ L'équipe LATILLE`;
                                 🗑️ Supprimer accès
                             </button>`;
                     }
-                    
-                    // Boutons de changement de rôle
-                    if (employee.role === 'user') {
+                }
+                
+                // Section gestion des rôles (TOUJOURS affichée pour non-admin-principal)
+                if (!isPrimary) {
+                    const currentRole = employee.role || 'user';
+                    if (currentRole === 'user' || currentRole !== 'admin') {
                         actionsHTML += `
-                            <button class="action-btn promote" onclick="changeEmployeeRole(${index}, 'admin')">
+                            <button class="action-btn promote" onclick="changeEmployeeRole(${index}, 'admin')" title="Promouvoir cet employé au rang d'administrateur">
                                 ⬆️ Promouvoir Admin
                             </button>`;
-                    } else if (employee.role === 'admin') {
+                    }
+                    if (currentRole === 'admin') {
                         actionsHTML += `
-                            <button class="action-btn demote" onclick="changeEmployeeRole(${index}, 'user')">
+                            <button class="action-btn demote" onclick="changeEmployeeRole(${index}, 'user')" title="Rétrograder cet administrateur au rang d'utilisateur">
                                 ⬇️ Rétrograder User
                             </button>`;
                     }
+                } else {
+                    // Pour l'admin principal, afficher une explication
+                    actionsHTML += `
+                        <div style="font-size: 11px; color: #666; font-style: italic; margin-top: 4px;">
+                            Rôle fixe - Administrateur principal
+                        </div>`;
+                }
+                
+                // Notice de protection pour l'admin principal
+                let protectionNotice = '';
+                if (isPrimary) {
+                    protectionNotice = `
+                        <div class="admin-protection">
+                            🔒 Administrateur principal - Modifications protégées
+                        </div>`;
+                } else {
+                    // Aide contextuelle pour les autres employés
+                    protectionNotice = `
+                        <div style="background: #f0f9ff; border: 1px solid #0ea5e9; padding: 6px; border-radius: 4px; font-size: 11px; color: #0c4a6e; margin-top: 4px;">
+                            💡 Rôle actuel: <strong>${roleText}</strong> - ${(employee.role === 'admin') ? 'Peut gérer tous les plannings' : 'Accès lecture seule aux plannings'}
+                        </div>`;
                 }
                 
                 employeeDiv.innerHTML = `
                     <div class="employee-header">
-                        <div class="employee-title">${isAdmin ? 'Administrateur' : `Employé ${index + 1}`}</div>
+                        <div class="employee-title">${isPrimary ? 'Administrateur Principal' : `Employé ${index + 1}`}</div>
                         <div class="employee-status">
-                            <span class="status-badge ${employee.role}">${employee.role === 'admin' ? 'Admin' : 'User'}</span>
+                            <span class="status-badge ${roleClass}">${roleText}</span>
                             <span class="status-badge ${statusClass}">${statusText}</span>
                         </div>
                     </div>
                     <div class="employee-details">
                         <input type="text" class="employee-input" value="${employee.firstName}" 
                                placeholder="Prénom" id="employee-firstName-${index}" 
-                               ${isAdmin ? 'readonly' : ''} oninput="formatFirstName(this)">
+                               ${isPrimary ? 'readonly' : ''} oninput="formatFirstName(this)">
                         <input type="text" class="employee-input" value="${employee.lastName}" 
                                placeholder="Nom" id="employee-lastName-${index}" 
-                               ${isAdmin ? 'readonly' : ''} oninput="formatLastName(this)">
+                               ${isPrimary ? 'readonly' : ''} oninput="formatLastName(this)">
                         <input type="email" class="employee-input" value="${employee.email}" 
                                placeholder="Email" id="employee-email-${index}" 
-                               ${isAdmin ? 'readonly' : ''} oninput="formatEmail(this)">
+                               ${isPrimary ? 'readonly' : ''} oninput="formatEmail(this)">
                     </div>
                     <div class="employee-actions">
                         ${actionsHTML}
                     </div>
+                    ${protectionNotice}
                 `;
                 
                 container.appendChild(employeeDiv);
@@ -2256,7 +2474,8 @@ L'équipe LATILLE`;
             
             const newEmployees = [];
             for (let i = 0; i < 5; i++) {
-                if (i === 4) {
+                if (isPrimaryAdmin(i)) {
+                    // Conserver l'admin principal tel quel
                     newEmployees.push(employees[4]);
                 } else {
                     const firstName = document.getElementById(`employee-firstName-${i}`).value || '';
@@ -2293,13 +2512,6 @@ L'équipe LATILLE`;
             document.getElementById('versionInfo').textContent = versionStr;
         }
 
-        function markPlanningAsModified() {
-            if (userRole === 'admin' && !isUpdatingFromFirebase) {
-                planningValidated = false;
-                updateUIForRole();
-            }
-        }
-
         async function validatePlanning() {
             try {
                 const weekKey = `${currentYear}-${currentWeek}`;
@@ -2307,7 +2519,9 @@ L'équipe LATILLE`;
                 // Incrémenter la version de la semaine courante
                 const newVersion = incrementCurrentWeekVersion();
 
-                planningValidated = true;
+                // Marquer comme validé dans le nouveau système
+                markCurrentWeekAsValidated();
+                
                 const validatedAt = new Date().toISOString();
 
                 const planningData = {
@@ -2343,7 +2557,7 @@ L'équipe LATILLE`;
 
                 await sendPlanningNotifications(weekKey);
 
-                updateUIForRole();
+                updateValidationDisplay();
                 updateVersionInfo();
                 updateSummaryTitle(); // Mettre à jour le titre du résumé
                 alert('Planning validé et notifications envoyées !');
@@ -2640,7 +2854,8 @@ L'équipe LATILLE`;
                     });
                 }
 
-                markPlanningAsModified();
+                // Marquer la semaine courante comme modifiée
+                markCurrentWeekAsModified();
 
                 console.log('Données sauvegardées sur Firebase');
                 return true;
@@ -2670,6 +2885,16 @@ L'équipe LATILLE`;
                     weekVersions = versionsDoc.data().versions || {};
                 }
 
+                // IMPORTANT : Charger les états de modification EN PREMIER
+                const modificationsDoc = await getDoc(doc(window.firestore, 'planning-data', 'week-modifications'));
+                if (modificationsDoc.exists()) {
+                    const data = modificationsDoc.data();
+                    weekModifications = data.modifications || {};
+                    weekValidations = data.validations || {};
+                    console.log('États de modification chargés:', weekModifications);
+                    console.log('États de validation chargés:', weekValidations);
+                }
+
                 // Charger les informations de validation par semaine
                 const validationInfoDoc = await getDoc(doc(window.firestore, 'planning-data', 'week-validation-info'));
                 if (validationInfoDoc.exists()) {
@@ -2692,7 +2917,12 @@ L'équipe LATILLE`;
                     } else if (docId.startsWith('validated-')) {
                         const key = docId.replace('validated-', '');
                         if (key === `${currentYear}-${currentWeek}`) {
-                            planningValidated = data.validated || false;
+                            // Utiliser le nouveau système
+                            if (data.validated) {
+                                weekValidations[key] = true;
+                                weekModifications[key] = false;
+                            }
+                            
                             // Charger la version spécifique de cette semaine si elle existe
                             if (data.version) {
                                 weekVersions[key] = data.version;
@@ -2710,6 +2940,12 @@ L'équipe LATILLE`;
                 });
 
                 console.log('Données chargées depuis Firebase');
+                
+                // Forcer la mise à jour de l'affichage de validation après chargement
+                setTimeout(() => {
+                    updateValidationDisplay();
+                }, 100);
+                
                 setupRealtimeListeners();
                 
             } catch (error) {
@@ -2782,6 +3018,10 @@ L'équipe LATILLE`;
                 activeListeners.validationInfo();
                 delete activeListeners.validationInfo;
             }
+            if (activeListeners.weekModifications) {
+                activeListeners.weekModifications();
+                delete activeListeners.weekModifications;
+            }
 
             // Écouter les changements du planning de la semaine courante
             activeListeners.currentSchedule = onSnapshot(
@@ -2847,7 +3087,12 @@ L'équipe LATILLE`;
                     
                     if (docSnapshot.exists()) {
                         const data = docSnapshot.data();
-                        planningValidated = data.validated || false;
+                        
+                        // Utiliser le nouveau système
+                        if (data.validated) {
+                            weekValidations[currentKey] = true;
+                            weekModifications[currentKey] = false;
+                        }
                         
                         // Mettre à jour la version spécifique de cette semaine
                         if (data.version) {
@@ -2863,13 +3108,38 @@ L'équipe LATILLE`;
                             };
                         }
                         
-                        updateUIForRole();
+                        updateValidationDisplay();
                         updateVersionInfo();
                         updateSummaryTitle(); // Mettre à jour le titre du résumé
                         console.log(`🔄 Validation semaine ${currentKey} mise à jour`);
                     }
                 },
                 (error) => console.error('Erreur listener validation:', error)
+            );
+
+            // Écouter les changements des états de modification
+            activeListeners.weekModifications = onSnapshot(
+                doc(window.firestore, 'planning-data', 'week-modifications'),
+                (docSnapshot) => {
+                    if (isUpdatingFromFirebase) return;
+                    
+                    if (docSnapshot.exists()) {
+                        const data = docSnapshot.data();
+                        const newModifications = data.modifications || {};
+                        const newValidations = data.validations || {};
+                        
+                        if (JSON.stringify(newModifications) !== JSON.stringify(weekModifications) ||
+                            JSON.stringify(newValidations) !== JSON.stringify(weekValidations)) {
+                            isUpdatingFromFirebase = true;
+                            weekModifications = newModifications;
+                            weekValidations = newValidations;
+                            updateValidationDisplay();
+                            isUpdatingFromFirebase = false;
+                            console.log('🔄 États de modification mis à jour depuis Firebase');
+                        }
+                    }
+                },
+                (error) => console.error('Erreur listener modifications:', error)
             );
 
             // Écouter les changements des versions par semaine
@@ -3012,6 +3282,9 @@ L'équipe LATILLE`;
             updateUIForRole();
             updateVersionInfo();
             updateSummaryTitle(); // Mettre à jour le titre avec les informations de validation
+            
+            // Charger les états de modification pour la nouvelle semaine
+            loadCurrentWeekStates();
             
             // Mettre à jour les listeners pour la nouvelle semaine (seulement si pas de mise à jour Firebase en cours)
             if (!isUpdatingFromFirebase) {
