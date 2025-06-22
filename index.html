@@ -1123,7 +1123,262 @@
             color: black;
         }
 
+        /* Modal infos planning - Version compacte */
+        #infosModal .modal-content {
+            width: 98%;
+            max-width: 1400px;
+            max-height: 96vh;
+            padding: 10px 15px;
+        }
+
+        .infos-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .infos-header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .period-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            font-size: 13px;
+        }
+
+        .period-selector label {
+            font-weight: bold;
+            color: #495057;
+            margin: 0;
+        }
+
+        .period-selector select {
+            padding: 4px 8px;
+            border: 1px solid #ced4da;
+            border-radius: 3px;
+            font-size: 13px;
+            height: 28px;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .quick-btn {
+            padding: 5px 10px;
+            border: 1px solid #007bff;
+            background: white;
+            color: #007bff;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            height: 28px;
+            display: flex;
+            align-items: center;
+        }
+
+        .quick-btn:hover {
+            background: #007bff;
+            color: white;
+        }
+
+        .quick-btn.active {
+            background: #007bff;
+            color: white;
+        }
+
+        .infos-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+
+        .infos-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 8px 6px;
+            text-align: center;
+            border: 1px solid #34495e;
+            font-weight: bold;
+            font-size: 11px;
+            height: 32px;
+        }
+
+        .infos-table td {
+            padding: 6px 4px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+            vertical-align: middle;
+            height: 36px;
+        }
+
+        .infos-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .infos-table tr:hover {
+            background-color: #e9ecef;
+        }
+
+        .infos-table tr.current-week {
+            background-color: #d4edda !important;
+            font-weight: bold;
+        }
+
+        .infos-table tr.current-week:hover {
+            background-color: #c3e6cb !important;
+        }
+
+        .week-cell {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .week-cell:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .version-history {
+            font-size: 10px;
+            color: #6c757d;
+            max-width: 100px;
+            word-wrap: break-word;
+        }
+
+        .status-badge-infos {
+            padding: 3px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .status-validated {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-modified {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-draft {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-empty {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+
+        .recipients-list {
+            font-size: 10px;
+            max-width: 130px;
+            word-wrap: break-word;
+        }
+
+        .action-icons {
+            display: flex;
+            justify-content: center;
+            gap: 3px;
+        }
+
+        .action-icon {
+            width: 22px;
+            height: 22px;
+            border: 1px solid #dee2e6;
+            background: white;
+            border-radius: 3px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .action-icon:hover {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .action-icon.view { color: #28a745; }
+        .action-icon.validate { color: #ffc107; }
+        .action-icon.email { color: #17a2b8; }
+        .action-icon.pdf { color: #6c757d; }
+
+        .infos-stats {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #495057;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stats-left {
+            display: flex;
+            gap: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-number {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
         @media (max-width: 1200px) {
+            .main-content {
+                padding: 0 10px;
+            }
+            
+            .time-slot {
+                width: 15px;
+                height: 15px;
+            }
+            
+            .employee-label {
+                font-size: 10px;
+            }
+            
+            .infos-table {
+                font-size: 11px;
+            }
+            
+            .infos-table th,
+            .infos-table td {
+                padding: 6px 4px;
+            }
+        }
             .main-content {
                 padding: 0 10px;
             }
@@ -1197,6 +1452,7 @@
                     <button class="btn btn-employees" onclick="toggleDropdown()">Actions ⋮</button>
                     <div class="dropdown-content" id="actionsDropdown">
                         <button onclick="openEmployeeModal(); closeDropdown()">Gérer Employés</button>
+                        <button onclick="openInfosModal(); closeDropdown()">Infos Planning</button>
                         <button onclick="openDuplicateModal(); closeDropdown()">Dupliquer Planning</button>
                         <button class="danger" onclick="openResetModal(); closeDropdown()">Réinitialiser</button>
                     </div>
@@ -1425,6 +1681,95 @@
                 </div>
             </div>
             <button class="btn" style="background: #dc3545; color: white;" onclick="resetPlanning()">Réinitialiser le Planning</button>
+        </div>
+    </div>
+
+    <!-- Modal Infos Planning -->
+    <div id="infosModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeInfosModal()">&times;</span>
+            <div class="infos-header">
+                <h2>📋 Infos Planning - Vue d'ensemble</h2>
+                <div class="quick-actions">
+                    <button class="quick-btn active" onclick="setCurrentWeekPeriod()">Semaine actuelle</button>
+                    <button class="quick-btn" onclick="toggleCustomPeriod()">Période personnalisée</button>
+                </div>
+            </div>
+            
+            <div class="period-selector">
+                <label>📍 Période centrée sur :</label>
+                <select id="infosWeekSelect">
+                    <!-- Options générées dynamiquement -->
+                </select>
+                <select id="infosYearSelect">
+                    <!-- Options générées dynamiquement -->
+                </select>
+                <span id="periodInfo" style="margin-left: 10px; font-size: 12px; color: #6c757d;"></span>
+                <button class="quick-btn" onclick="updateInfosTable()" style="margin-left: 15px;">🔄 Actualiser</button>
+            </div>
+
+            <div id="customPeriodSelector" style="display: none; margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 4px; border: 1px solid #dee2e6;">
+                <div style="display: flex; gap: 15px; align-items: center; font-size: 13px;">
+                    <div>
+                        <label style="font-weight: bold; margin-right: 5px;">De :</label>
+                        <select id="customStartWeek" style="padding: 4px 8px; font-size: 12px; height: 26px;"></select>
+                        <select id="customStartYear" style="padding: 4px 8px; font-size: 12px; height: 26px;"></select>
+                    </div>
+                    <div>
+                        <label style="font-weight: bold; margin-right: 5px;">À :</label>
+                        <select id="customEndWeek" style="padding: 4px 8px; font-size: 12px; height: 26px;"></select>
+                        <select id="customEndYear" style="padding: 4px 8px; font-size: 12px; height: 26px;"></select>
+                    </div>
+                    <button class="quick-btn" onclick="applyCustomPeriod()">Appliquer</button>
+                </div>
+            </div>
+
+            <table class="infos-table" id="infosTable">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">Année</th>
+                        <th style="width: 70px;">Semaine</th>
+                        <th style="width: 120px;">Versions</th>
+                        <th style="width: 110px;">Dernier Envoi</th>
+                        <th style="width: 150px;">Destinataires</th>
+                        <th style="width: 140px;">Statut</th>
+                        <th style="width: 80px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="infosTableBody">
+                    <!-- Contenu généré dynamiquement -->
+                </tbody>
+            </table>
+
+            <div class="infos-stats">
+                <div class="stats-row">
+                    <div class="stats-left">
+                        <div class="stat-item">
+                            <span>📈</span>
+                            <span id="statsValidated" class="stat-number">0</span>
+                            <span>validés</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>⚠️</span>
+                            <span id="statsModified" class="stat-number">0</span>
+                            <span>modifiés</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>📝</span>
+                            <span id="statsDraft" class="stat-number">0</span>
+                            <span>brouillons</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>⚪</span>
+                            <span id="statsEmpty" class="stat-number">0</span>
+                            <span>vides</span>
+                        </div>
+                    </div>
+                    <div class="stats-right">
+                        <span id="lastActivity" style="font-size: 12px; color: #6c757d;">⏰ Dernière activité : -</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2670,24 +3015,27 @@ L'équipe LATILLE`;
                 format: 'a4'
             });
 
+            // Extraire l'année et la semaine du weekKey
+            const [year, week] = weekKey.split('-').map(Number);
+            
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
             const margin = 10;
-            const dates = getWeekDates(currentYear, currentWeek);
-            const weekVersion = getCurrentWeekVersion();
+            const dates = getWeekDates(year, week);
+            const weekVersion = weekVersions[weekKey] || { number: 1.0, date: getCurrentDateString() };
 
             doc.setFontSize(16);
             doc.setFont(undefined, 'bold');
             doc.text('PLANNING SPAR LATILLE', pageWidth / 2, 20, { align: 'center' });
             
             doc.setFontSize(12);
-            doc.text(`Semaine ${currentWeek} - ${currentYear}`, pageWidth / 2, 28, { align: 'center' });
+            doc.text(`Semaine ${week} - ${year}`, pageWidth / 2, 28, { align: 'center' });
             
             doc.setFontSize(10);
             doc.text(`Du ${dates[0].toLocaleDateString('fr-FR')} au ${dates[6].toLocaleDateString('fr-FR')}`, pageWidth / 2, 35, { align: 'center' });
 
             doc.setFontSize(8);
-            const versionStr = `S${currentWeek}/${currentYear} - ${weekVersion.date} - v${weekVersion.number}`;
+            const versionStr = `S${week}/${year} - ${weekVersion.date} - v${weekVersion.number}`;
             doc.text(versionStr, pageWidth - margin, pageHeight - 5, { align: 'right' });
 
             const tableData = [];
@@ -2719,7 +3067,7 @@ L'équipe LATILLE`;
                         }
                     });
                     
-                    if (isSlotClosed(dayIndex, slotIndex)) {
+                    if (isSlotClosedForWeek(dayIndex, slotIndex, weekKey)) {
                         cellContent = 'FERMÉ';
                     }
                     
@@ -2749,6 +3097,20 @@ L'équipe LATILLE`;
             });
 
             return doc.output('blob');
+        }
+
+        // Fonction helper pour vérifier les fermetures d'une semaine spécifique
+        function isSlotClosedForWeek(dayIndex, slotIndex, weekKey) {
+            const state = closures[weekKey] ? closures[weekKey][dayIndex] || 'open' : 'open';
+            
+            if (state === 'closed') return true;
+            if (state === 'open') return false;
+            
+            const hour = parseInt(timeSlots[slotIndex].start.split(':')[0]);
+            if (state === 'am-closed' && hour >= 7 && hour < 13) return true;
+            if (state === 'pm-closed' && hour >= 13) return true;
+            
+            return false;
         }
 
         // Initialisation de l'application
@@ -4247,11 +4609,423 @@ L'équipe LATILLE`;
             dropdown.classList.remove('show');
         }
 
+        // Fonctions pour la modal Infos Planning
+        function openInfosModal() {
+            if (userRole !== 'admin') return;
+            
+            const modal = document.getElementById('infosModal');
+            populateInfosSelectors();
+            setCurrentWeekPeriod();
+            modal.style.display = 'block';
+        }
+
+        function closeInfosModal() {
+            document.getElementById('infosModal').style.display = 'none';
+        }
+
+        function populateInfosSelectors() {
+            const weekSelect = document.getElementById('infosWeekSelect');
+            const yearSelect = document.getElementById('infosYearSelect');
+            const customStartWeek = document.getElementById('customStartWeek');
+            const customEndWeek = document.getElementById('customEndWeek');
+            const customStartYear = document.getElementById('customStartYear');
+            const customEndYear = document.getElementById('customEndYear');
+            
+            // Vider tous les sélecteurs
+            [weekSelect, yearSelect, customStartWeek, customEndWeek, customStartYear, customEndYear].forEach(select => {
+                select.innerHTML = '';
+            });
+            
+            // Remplir les semaines (1-53)
+            for (let i = 1; i <= 53; i++) {
+                [weekSelect, customStartWeek, customEndWeek].forEach(select => {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = `S${i}`;
+                    if (i === currentWeek) option.selected = true;
+                    select.appendChild(option);
+                });
+            }
+            
+            // Remplir les années (2024-2030)
+            for (let i = 2024; i <= 2030; i++) {
+                [yearSelect, customStartYear, customEndYear].forEach(select => {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = i;
+                    if (i === currentYear) option.selected = true;
+                    select.appendChild(option);
+                });
+            }
+            
+            // Ajouter les événements de changement
+            weekSelect.addEventListener('change', updateInfosTable);
+            yearSelect.addEventListener('change', updateInfosTable);
+        }
+
+        function setCurrentWeekPeriod() {
+            document.getElementById('infosWeekSelect').value = currentWeek;
+            document.getElementById('infosYearSelect').value = currentYear;
+            updateInfosTable();
+            
+            // Mettre à jour les boutons
+            document.querySelectorAll('.quick-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.quick-btn').classList.add('active');
+            
+            // Cacher la période personnalisée
+            document.getElementById('customPeriodSelector').style.display = 'none';
+        }
+
+        function toggleCustomPeriod() {
+            const customSelector = document.getElementById('customPeriodSelector');
+            const isVisible = customSelector.style.display !== 'none';
+            
+            customSelector.style.display = isVisible ? 'none' : 'block';
+            
+            // Mettre à jour les boutons
+            document.querySelectorAll('.quick-btn').forEach(btn => btn.classList.remove('active'));
+            if (!isVisible) {
+                document.querySelectorAll('.quick-btn')[1].classList.add('active');
+            } else {
+                document.querySelectorAll('.quick-btn')[0].classList.add('active');
+            }
+        }
+
+        function applyCustomPeriod() {
+            const startWeek = parseInt(document.getElementById('customStartWeek').value);
+            const startYear = parseInt(document.getElementById('customStartYear').value);
+            const endWeek = parseInt(document.getElementById('customEndWeek').value);
+            const endYear = parseInt(document.getElementById('customEndYear').value);
+            
+            // Validation basique
+            if (startYear > endYear || (startYear === endYear && startWeek > endWeek)) {
+                alert('⚠️ La période de début doit être antérieure à la période de fin');
+                return;
+            }
+            
+            // Calculer le nombre de semaines
+            const weeksCount = calculateWeeksBetween(startYear, startWeek, endYear, endWeek);
+            if (weeksCount > 20) {
+                alert('⚠️ La période sélectionnée est trop large (maximum 20 semaines)');
+                return;
+            }
+            
+            updateInfosTableCustom(startYear, startWeek, endYear, endWeek);
+        }
+
+        function calculateWeeksBetween(startYear, startWeek, endYear, endWeek) {
+            if (startYear === endYear) {
+                return endWeek - startWeek + 1;
+            }
+            
+            let count = 0;
+            let currentYear = startYear;
+            let currentWeek = startWeek;
+            
+            while (currentYear < endYear || (currentYear === endYear && currentWeek <= endWeek)) {
+                count++;
+                currentWeek++;
+                if (currentWeek > 53) {
+                    currentWeek = 1;
+                    currentYear++;
+                }
+                if (count > 25) break; // Sécurité
+            }
+            
+            return count;
+        }
+
+        function calculateWeekRange(centerYear, centerWeek) {
+            const weeks = [];
+            let iterYear = centerYear;
+            let iterWeek = centerWeek;
+            
+            // Reculer de 3 semaines
+            for (let i = 0; i < 3; i++) {
+                iterWeek--;
+                if (iterWeek < 1) {
+                    iterWeek = 53;
+                    iterYear--;
+                }
+            }
+            
+            // Ajouter 12 semaines (3 avant + courante + 8 après)
+            for (let i = 0; i < 12; i++) {
+                weeks.push({ 
+                    year: iterYear, 
+                    week: iterWeek, 
+                    isCurrent: iterYear === currentYear && iterWeek === currentWeek  // Utiliser les variables globales
+                });
+                iterWeek++;
+                if (iterWeek > 53) {
+                    iterWeek = 1;
+                    iterYear++;
+                }
+            }
+            
+            return weeks;
+        }
+
+        async function updateInfosTable() {
+            const centerWeek = parseInt(document.getElementById('infosWeekSelect').value);
+            const centerYear = parseInt(document.getElementById('infosYearSelect').value);
+            
+            // Mettre à jour l'info de période
+            const weeks = calculateWeekRange(centerYear, centerWeek);
+            const firstWeek = weeks[0];
+            const lastWeek = weeks[weeks.length - 1];
+            document.getElementById('periodInfo').textContent = 
+                `Affichage : S${firstWeek.week}/${firstWeek.year} à S${lastWeek.week}/${lastWeek.year}`;
+            
+            await generateInfosTable(weeks);
+        }
+
+        async function updateInfosTableCustom(startYear, startWeek, endYear, endWeek) {
+            const weeks = [];
+            let iterYear = startYear;
+            let iterWeek = startWeek;
+            
+            while (iterYear < endYear || (iterYear === endYear && iterWeek <= endWeek)) {
+                weeks.push({ 
+                    year: iterYear, 
+                    week: iterWeek, 
+                    isCurrent: iterYear === currentYear && iterWeek === currentWeek 
+                });
+                iterWeek++;
+                if (iterWeek > 53) {
+                    iterWeek = 1;
+                    iterYear++;
+                }
+                if (weeks.length > 20) break; // Sécurité
+            }
+            
+            // Mettre à jour l'info de période
+            document.getElementById('periodInfo').textContent = 
+                `Période personnalisée : S${startWeek}/${startYear} à S${endWeek}/${endYear} (${weeks.length} semaines)`;
+            
+            await generateInfosTable(weeks);
+        }
+
+        async function generateInfosTable(weeks) {
+            const tbody = document.getElementById('infosTableBody');
+            tbody.innerHTML = '';
+            
+            let stats = { validated: 0, modified: 0, draft: 0, empty: 0 };
+            let lastActivity = null;
+            
+            for (const weekInfo of weeks) {
+                const weekKey = `${weekInfo.year}-${weekInfo.week}`;
+                const weekData = await getWeekData(weekKey);
+                
+                const row = document.createElement('tr');
+                if (weekInfo.isCurrent) {
+                    row.classList.add('current-week');
+                }
+                
+                // Mise à jour des statistiques
+                stats[weekData.status]++;
+                if (weekData.lastActivity && (!lastActivity || new Date(weekData.lastActivity) > new Date(lastActivity))) {
+                    lastActivity = weekData.lastActivity;
+                }
+                
+                row.innerHTML = `
+                    <td>${weekInfo.year}</td>
+                    <td class="week-cell" onclick="navigateToWeek(${weekInfo.year}, ${weekInfo.week})">
+                        <strong>S${weekInfo.week}</strong>
+                        ${weekInfo.isCurrent ? '<br><small style="color: #28a745;">COURANTE</small>' : ''}
+                    </td>
+                    <td class="version-history">${weekData.versions}</td>
+                    <td style="font-size: 11px;">${weekData.lastSent}</td>
+                    <td class="recipients-list">${weekData.recipients}</td>
+                    <td>
+                        <span class="status-badge-infos status-${weekData.status}">
+                            ${weekData.statusText}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-icons">
+                            <div class="action-icon view" onclick="navigateToWeek(${weekInfo.year}, ${weekInfo.week})" title="Voir">👁️</div>
+                            ${weekData.canValidate ? '<div class="action-icon validate" onclick="validateWeek(' + weekInfo.year + ', ' + weekInfo.week + ')" title="Valider">✅</div>' : ''}
+                            ${weekData.canEmail ? '<div class="action-icon email" onclick="emailWeek(' + weekInfo.year + ', ' + weekInfo.week + ')" title="Envoyer">📧</div>' : ''}
+                            ${weekData.canPdf ? '<div class="action-icon pdf" onclick="downloadWeekPdf(' + weekInfo.year + ', ' + weekInfo.week + ')" title="PDF">📄</div>' : ''}
+                        </div>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            }
+            
+            // Mettre à jour les statistiques
+            document.getElementById('statsValidated').textContent = stats.validated;
+            document.getElementById('statsModified').textContent = stats.modified;
+            document.getElementById('statsDraft').textContent = stats.draft;
+            document.getElementById('statsEmpty').textContent = stats.empty;
+            
+            // Mettre à jour la dernière activité
+            if (lastActivity) {
+                const date = new Date(lastActivity);
+                document.getElementById('lastActivity').textContent = 
+                    `⏰ Dernière activité : ${date.toLocaleDateString('fr-FR')} ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+            } else {
+                document.getElementById('lastActivity').textContent = '⏰ Aucune activité récente';
+            }
+        }
+
+        async function getWeekData(weekKey) {
+            const hasSchedule = schedules[weekKey] && Object.keys(schedules[weekKey]).length > 0;
+            const hasClosure = closures[weekKey] && Object.keys(closures[weekKey]).length > 0;
+            const isModified = weekModifications[weekKey] === true;
+            const isValidated = weekValidations[weekKey] === true;
+            const validationInfo = weekValidationInfo[weekKey];
+            const versionInfo = weekVersions[weekKey];
+            
+            let status, statusText, versions = '-', lastSent = '-', recipients = '-';
+            let canValidate = false, canEmail = false, canPdf = false;
+            
+            // Déterminer le statut
+            if (!hasSchedule && !hasClosure) {
+                status = 'empty';
+                statusText = '⚪ Vide';
+            } else if (isValidated) {
+                status = 'validated';
+                statusText = '✅ Validé & Envoyé';
+                canEmail = true;
+                canPdf = true;
+            } else if (isModified) {
+                status = 'modified';
+                statusText = '⚠️ Modifié - Non validé';
+                canValidate = true;
+                canPdf = true;
+            } else {
+                status = 'draft';
+                statusText = '📝 Brouillon';
+                canValidate = true;
+                canPdf = true;
+            }
+            
+            // Construire l'historique des versions
+            if (versionInfo) {
+                versions = `v${versionInfo.number}`;
+            }
+            
+            // Informations de validation
+            if (validationInfo && validationInfo.validatedAt) {
+                const date = new Date(validationInfo.validatedAt);
+                lastSent = `${date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })} ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+                
+                // Construire la liste des destinataires (simulation)
+                const concernedEmployees = [];
+                if (schedules[weekKey]) {
+                    for (let empIndex = 0; empIndex < employees.length; empIndex++) {
+                        let hasHours = false;
+                        for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+                            if (schedules[weekKey][dayIndex]) {
+                                for (let slotIndex = 0; slotIndex < timeSlots.length; slotIndex++) {
+                                    if (schedules[weekKey][dayIndex][slotIndex] && schedules[weekKey][dayIndex][slotIndex][empIndex]) {
+                                        hasHours = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (hasHours) break;
+                        }
+                        if (hasHours && employees[empIndex].firstName) {
+                            concernedEmployees.push(employees[empIndex].firstName);
+                        }
+                    }
+                }
+                
+                if (concernedEmployees.length > 0) {
+                    if (concernedEmployees.length <= 3) {
+                        recipients = concernedEmployees.join(', ');
+                    } else {
+                        recipients = `${concernedEmployees.slice(0, 2).join(', ')} +${concernedEmployees.length - 2} autres`;
+                    }
+                } else {
+                    recipients = 'Admin';
+                }
+            }
+            
+            return {
+                status,
+                statusText,
+                versions,
+                lastSent,
+                recipients,
+                canValidate,
+                canEmail,
+                canPdf,
+                lastActivity: validationInfo?.validatedAt
+            };
+        }
+
+        // Actions rapides depuis le tableau
+        function navigateToWeek(year, week) {
+            currentYear = year;
+            currentWeek = week;
+            document.getElementById('weekSelect').value = currentWeek;
+            document.getElementById('yearSelect').value = currentYear;
+            updateScheduleDisplay();
+            closeInfosModal();
+        }
+
+        async function validateWeek(year, week) {
+            if (!confirm(`Valider le planning de la semaine ${week}/${year} ?`)) return;
+            
+            const originalWeek = currentWeek;
+            const originalYear = currentYear;
+            
+            // Basculer temporairement sur cette semaine
+            currentWeek = week;
+            currentYear = year;
+            
+            try {
+                await validatePlanning();
+                // Actualiser le tableau
+                updateInfosTable();
+            } catch (error) {
+                console.error('Erreur validation:', error);
+                alert('Erreur lors de la validation');
+            } finally {
+                // Revenir à la semaine originale
+                currentWeek = originalWeek;
+                currentYear = originalYear;
+            }
+        }
+
+        async function emailWeek(year, week) {
+            if (!confirm(`Envoyer le planning de la semaine ${week}/${year} par email ?`)) return;
+            
+            // TODO: Implémenter l'envoi d'email pour une semaine spécifique
+            alert(`Envoi du planning S${week}/${year} - Fonctionnalité à implémenter`);
+        }
+
+        async function downloadWeekPdf(year, week) {
+            try {
+                const weekKey = `${year}-${week}`;
+                const pdfBlob = await generatePlanningPDF(weekKey);
+                const url = URL.createObjectURL(pdfBlob);
+                
+                // Créer un lien de téléchargement
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Planning_S${week}_${year}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Erreur génération PDF:', error);
+                alert('Erreur lors de la génération du PDF');
+            }
+        }
+
         // Click outside modal to close
         window.addEventListener('click', (event) => {
             const employeeModal = document.getElementById('employeeModal');
             const passwordModal = document.getElementById('passwordModal');
             const emailModal = document.getElementById('emailModal');
+            const infosModal = document.getElementById('infosModal');
             
             if (event.target === employeeModal) {
                 closeEmployeeModal();
@@ -4261,6 +5035,9 @@ L'équipe LATILLE`;
             }
             if (event.target === emailModal) {
                 closeEmailModal();
+            }
+            if (event.target === infosModal) {
+                closeInfosModal();
             }
         });
 
